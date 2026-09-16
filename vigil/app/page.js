@@ -2,6 +2,7 @@
 import Image from "next/image";
 import styles from "./page.module.css";
 import {useRouter} from "next/navigation";
+import { createBrowserClient } from "@supabase/ssr";
 
 
 export default function Home() {
@@ -12,6 +13,7 @@ export default function Home() {
   const handleGoogleClick = ()=>{
     router.push("/google-login");
   }
+  
 
   return (
       <main className={styles.main}>

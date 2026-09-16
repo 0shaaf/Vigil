@@ -11,14 +11,14 @@ export default function Login(user){
 
 
     const sp_BrowserClient = getSupabaseBrowserClient();
-
     const router = useRouter();
+    
     const handleSignIn = async (e)=>{
         e.preventDefault();
         const {error, data} = await sp_BrowserClient.auth.signInWithOAuth({
             provider:  "google",
             options:  {
-                redirectTo : `${window.location.origin}/welcome`,
+                redirectTo : `${window.location.origin}/dashboard`,
                 skipBrowserRedirect : false
             }
         });
