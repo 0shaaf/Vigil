@@ -1,4 +1,4 @@
-import { getSupabaseBrowserClient } from "../supabase/browser-client";
+import { getSupabaseBrowserClient } from "../browser-client";
 
 
 export async function signUpWithEmail(email, password) {
