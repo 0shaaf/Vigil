@@ -14,6 +14,5 @@ export default async function DashboardPage() {
     .select("*")
     .eq("usr_id", user.id);
 
-  console.log("Endpoint Responded : " , checkRequest);
   return <ConstellationWeb switches={switches || []} />;
 }
