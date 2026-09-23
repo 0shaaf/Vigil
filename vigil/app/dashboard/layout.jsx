@@ -1,13 +1,19 @@
-export default function DashboardLayout({ children }) {
-  return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      {/* 1. Left column: Stays on screen permanently */}
-      <aside style={{ width: "200px", borderRight: "1px solid #ccc" }}>
-        <p>Sidebar Navigation</p>
-      </aside>
+import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "../lib/supabase/server-client";
+import Sidebar from "./components/Sidebar";
 
-      {/* 2. Right column: Swaps out depending on what route you visit */}
-      <main style={{ flex: 1, padding: "20px" }}>
+export default async function DashboardLayout({ children }) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data?.user) {
+    redirect("/");
+  }
+
+  return (
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#07090e" }}>
+      <Sidebar userEmail={data.user.email} />
+      <main style={{ flex: 1, padding: 0, overflow: "hidden", height: "100vh" }}>
         {children}
       </main>
     </div>

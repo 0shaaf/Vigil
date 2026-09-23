@@ -13,3 +13,15 @@ export async function readTableData(tableName) {
 
   return { error: error, data: data };
 }
+
+export async function getSwitchByID(id) {
+  const sp_client = await createSupabaseServerClient();
+  const { error, data } = await sp_client.from('switches').select("*").eq('id' , id);
+
+  if (error) {
+    console.log("[Error] : ", error.message);
+    throw new Error(error.message);
+  }
+
+  return { error: error, data: data };
+}

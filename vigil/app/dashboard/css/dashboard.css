@@ -1,0 +1,238 @@
+/* Full-Bleed Canvas Viewport (No borders, fills 100% of remaining area) */
+.constellation-viewport {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #07090e;
+  border: none;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.constellation-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Floating Heading Inside the Canvas */
+.constellation-header {
+  position: absolute;
+  top: 32px;
+  left: 36px;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.constellation-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+}
+
+.constellation-subtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* Dotted Grid: Impulsive Red Heartbeat Pulse */
+.impulsive-dots-base {
+  animation: impulsiveRedGlow 3.2s cubic-bezier(0.2, 0.9, 0.3, 1) infinite;
+}
+
+@keyframes impulsiveRedGlow {
+  0%, 100% {
+    opacity: 0.15; /* resting mild red */
+  }
+  8% {
+    opacity: 0.85; /* sharp primary impulse */
+  }
+  16% {
+    opacity: 0.2;  /* rapid decay */
+  }
+  25% {
+    opacity: 0.6;  /* secondary rebound pulse */
+  }
+  40% {
+    opacity: 0.15; /* settles back to mild red */
+  }
+}
+
+/* Dotted Grid: Horizontal Red Wave Sweep (Left to Right) */
+.grid-wave-beam {
+  transform-box: view-box;
+  animation: waveSweep 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes waveSweep {
+  0% {
+    transform: translateX(-450px);
+  }
+  100% {
+    transform: translateX(calc(100% + 450px));
+  }
+}
+
+/* Spiderweb Threads & Orbit */
+.constellation-orbit {
+  fill: none;
+  stroke: #172033;
+  stroke-dasharray: 4 6;
+}
+
+.constellation-thread {
+  stroke: #1e293b;
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+.constellation-thread.is-hovered {
+  stroke: #38bdf8;
+  stroke-width: 2;
+  stroke-dasharray: none;
+}
+
+.constellation-thread.is-pulsing {
+  stroke: #10b981;
+  stroke-width: 2;
+  stroke-dasharray: none;
+}
+
+/* Switch Node Elements */
+.switch-node {
+  cursor: pointer;
+}
+
+.switch-node-halo {
+  fill: #0f172a;
+  stroke: #334155;
+  stroke-width: 1;
+  transition: all 0.2s ease;
+}
+
+.switch-node:hover .switch-node-halo {
+  stroke: #38bdf8;
+  stroke-width: 2;
+  r: 28;
+}
+
+.switch-node-pip {
+  fill: #10b981;
+}
+
+.switch-node-label {
+  font-size: 12px;
+  font-weight: 500;
+  text-anchor: middle;
+  fill: #94a3b8;
+  font-family: inherit;
+  transition: fill 0.2s ease;
+}
+
+.switch-node:hover .switch-node-label {
+  fill: #f8fafc;
+}
+
+/* Central Core Heartbeat Button */
+.heartbeat-container {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+
+.heartbeat-button {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background-color: #0284c7;
+  border: 4px solid #38bdf8;
+  box-shadow: 0 0 25px rgba(2, 132, 199, 0.4);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+}
+
+.heartbeat-button:hover {
+  box-shadow: 0 0 35px rgba(56, 189, 248, 0.6);
+  transform: scale(1.03);
+}
+
+.heartbeat-button.is-active {
+  background-color: #10b981;
+  border-color: #6ee7b7;
+  box-shadow: 0 0 35px rgba(16, 185, 129, 0.7);
+  transform: scale(0.95);
+}
+
+.heartbeat-icon {
+  font-size: 1.4rem;
+}
+
+.heartbeat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.heartbeat-feedback {
+  position: absolute;
+  top: 120px;
+  color: #38bdf8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Switch Tooltip Popover */
+.switch-tooltip-card {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 16px 20px;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tooltip-title {
+  font-size: 1rem;
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.tooltip-meta {
+  color: #94a3b8;
+}
+
+.tooltip-link-hint {
+  font-size: 0.75rem;
+  color: #38bdf8;
+  margin-top: 4px;
+}

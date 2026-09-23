@@ -1,0 +1,232 @@
+/* Sidebar Outer Anchor (holds a static 68px gutter so page content doesn't jump) */
+.sidebar-gutter {
+  position: relative;
+  width: 68px;
+  height: 100vh;
+  flex-shrink: 0;
+  z-index: 40;
+}
+
+/* Expanding Sidebar Body */
+.sidebar-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 68px;
+  height: 100vh;
+  background-color: #090b10;
+  border-right: 1px solid #1a202c;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+  z-index: 50;
+}
+
+/* Expansion Trigger on Hover */
+.sidebar-panel:hover {
+  width: 230px;
+  box-shadow: 12px 0 30px rgba(0, 0, 0, 0.65);
+  background-color: #0b0e14;
+}
+
+/* Header & Brand */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  margin-bottom: 20px;
+  text-decoration: none;
+  color: #f8fafc;
+}
+
+.brand-icon-box {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0284c7, #06b6d4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.brand-name {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #f8fafc;
+  opacity: 0;
+  white-space: nowrap;
+  transform: translateX(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-panel:hover .brand-name {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Navigation Docks Container */
+.sidebar-nav-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+/* Isolated Docks */
+.sidebar-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #161b26;
+}
+
+.sidebar-dock:last-of-type {
+  border-bottom: none;
+}
+
+.dock-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  padding: 0 8px;
+  margin-bottom: 4px;
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar-panel:hover .dock-label {
+  opacity: 1;
+}
+
+/* Nav Item Links */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  position: relative;
+}
+
+.sidebar-item:hover {
+  background-color: #131722;
+  color: #f1f5f9;
+}
+
+.sidebar-item.is-active {
+  background-color: #171d2b;
+  color: #38bdf8;
+}
+
+.sidebar-item.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  background-color: #38bdf8;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Nav Item Icon */
+.item-icon {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Nav Item Label */
+.item-label {
+  opacity: 0;
+  white-space: nowrap;
+  transform: translateX(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-panel:hover .item-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Bottom User Dock */
+.sidebar-bottom-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #161b26;
+}
+
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.user-email-text {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-panel:hover .user-email-text {
+  opacity: 1;
+}
+
+.signout-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.signout-button:hover {
+  color: #f43f5e;
+  background-color: rgba(244, 63, 94, 0.08);
+}

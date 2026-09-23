@@ -27,7 +27,7 @@ export async function signInWithGoogle() {
   return await sp_BrowserClient.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${window.location.origin}/dashboard`,
+      redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
       skipBrowserRedirect: false,
     },
   });

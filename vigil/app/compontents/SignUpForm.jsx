@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { signUpWithEmail, signInWithGoogle } from "@/app/lib/supabase/auth/client-auth";
 import "./CSS/AuthForm.css";
+import { redirect } from "next/dist/server/api-utils";
 
 export default function SignUpForm({ onToggleMode }) {
   const [name, setName] = useState("");

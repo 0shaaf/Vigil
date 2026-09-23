@@ -192,3 +192,25 @@ export async function removeSwitch(swId) {
     return response1.error;
   }
 }
+
+export async function triggerHeartbeat() {
+  const sp_client = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await sp_client.auth.getUser();
+
+  if (!user) return { error: "Unauthorized" };
+
+  const { error } = await sp_client
+    .from("switches")
+    .update({ last_check_in: new Date().toISOString() })
+    .eq("usr_id", user.id);
+
+  if (error) {
+    console.error("[Supabase Error] Heartbeat failed:", error);
+    return error;
+  }
+
+  revalidatePath("/dashboard");
+  return null;
+}
