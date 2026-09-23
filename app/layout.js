@@ -18,6 +18,13 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
+  const params = await searchParams;
+
+  // If Supabase falls back to root with the auth code, forward to the callback handler
+  if (params?.code) {
+    redirect(`/auth/callback?code=${params.code}`);
+  }
+  
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
