@@ -7,7 +7,6 @@ export default async function Switches() {
   const { error, data } = await readTableData("switches");
 
   const switches = data || [];
-
   return (
     <div className="switches-page">
       <header className="switches-topbar">

@@ -1,0 +1,196 @@
+/* Container Shell */
+.contacts-page {
+  padding: 36px 40px 100px;
+  max-width: 1000px;
+  margin: 0 auto;
+  min-height: 100vh;
+  box-sizing: border-box;
+  color: #d1d1d1;
+}
+
+/* Header */
+.contacts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #222222;
+  margin-bottom: 32px;
+}
+
+.contacts-title {
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f0f0f0;
+  margin: 0;
+}
+
+.contacts-subtitle {
+  font-size: 0.83rem;
+  color: #707070;
+  margin-top: 6px;
+}
+
+/* Quick Add Box */
+.contact-create-card {
+  background-color: #121212;
+  border: 1px solid #242424;
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 32px;
+}
+
+.create-card-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #555555;
+  margin-bottom: 14px;
+  display: block;
+}
+
+.contact-quick-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.input-contact {
+  background-color: #171717;
+  border: 1px solid #262626;
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: #ededed;
+  font-family: inherit;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input-contact:focus {
+  border-color: #444444;
+}
+
+.btn-add-contact {
+  background-color: #ededed;
+  color: #111111;
+  border: 1px solid #ededed;
+  border-radius: 6px;
+  padding: 9px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.btn-add-contact:hover {
+  opacity: 0.85;
+}
+
+.btn-add-contact:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Contacts Table */
+.contacts-table-wrapper {
+  background-color: #121212;
+  border: 1px solid #242424;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.contacts-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.contacts-table th {
+  background-color: #171717;
+  padding: 12px 18px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666666;
+  border-bottom: 1px solid #222222;
+}
+
+.contacts-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid #1c1c1c;
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+.contacts-table tr:last-child td {
+  border-bottom: none;
+}
+
+.contacts-table tr:hover td {
+  background-color: #141414;
+}
+
+/* Column Elements */
+.contact-cell-name {
+  color: #e5e5e5;
+  font-weight: 500;
+}
+
+.contact-cell-email {
+  color: #888888;
+  font-family: monospace;
+  font-size: 0.82rem;
+}
+
+.contact-switches-pill {
+  display: inline-flex;
+  align-items: center;
+  background-color: #1a1a1a;
+  border: 1px solid #262626;
+  color: #aaaaaa;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.btn-delete-contact {
+  background: transparent;
+  border: none;
+  color: #555555;
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.btn-delete-contact:hover {
+  color: #e06c75;
+}
+
+/* Empty State */
+.contacts-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: #666666;
+  font-size: 0.85rem;
+}
+
+.error-callout {
+  background-color: #190f0f;
+  border: 1px solid #3d1c1c;
+  color: #e06c75;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  margin-bottom: 16px;
+}

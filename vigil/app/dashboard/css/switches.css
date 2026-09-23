@@ -383,3 +383,96 @@
   color: #d97777;
   background-color: #140d0d;
 }
+
+/* Actions Strip */
+.card-actions-strip {
+  display: flex;
+  gap: 6px;
+}
+
+.action-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background-color: #171717;
+  border: 1px solid #242424;
+  color: #555555;
+}
+
+.action-badge.is-enabled {
+  color: #ededed;
+  border-color: #383838;
+  background-color: #1f1f1f;
+}
+
+/* Card Footer Breakdown */
+.card-footer-metrics {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metric-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.metric-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #555555;
+}
+
+.metric-value {
+  font-size: 0.8rem;
+  color: #aaaaaa;
+  font-weight: 500;
+}
+
+.tier-pills {
+  display: flex;
+  gap: 4px;
+}
+
+.tier-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+}
+
+.tier-high {
+  background-color: #241616;
+  border-color: #4a2222;
+  color: #e06c75;
+}
+
+.tier-med {
+  background-color: #221c13;
+  border-color: #45331a;
+  color: #e5c07b;
+}
+
+.tier-low {
+  background-color: #141f17;
+  border-color: #1e3d26;
+  color: #98c379;
+}
+
+.tier-targeted {
+  background-color: #181d26;
+  border-color: #24354a;
+  color: #61afef;
+}
+
+.tier-none {
+  font-size: 0.75rem;
+  color: #444444;
+}

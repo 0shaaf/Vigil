@@ -1,0 +1,228 @@
+/* Layout Shell */
+.logs-page {
+  padding: 36px 40px 100px;
+  max-width: 1100px;
+  margin: 0 auto;
+  min-height: 100vh;
+  box-sizing: border-box;
+  color: #d1d1d1;
+}
+
+/* Header */
+.logs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #222222;
+  margin-bottom: 28px;
+}
+
+.logs-title {
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f0f0f0;
+  margin: 0;
+}
+
+.logs-subtitle {
+  font-size: 0.83rem;
+  color: #707070;
+  margin-top: 6px;
+}
+
+/* Metrics Summary Bar */
+.logs-metrics-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.log-metric-card {
+  background-color: #121212;
+  border: 1px solid #242424;
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-card-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666666;
+}
+
+.metric-card-val {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ededed;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Telemetry Table Container */
+.logs-table-wrapper {
+  background-color: #121212;
+  border: 1px solid #242424;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.logs-table th {
+  background-color: #171717;
+  padding: 12px 18px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666666;
+  border-bottom: 1px solid #222222;
+}
+
+.logs-table td {
+  padding: 13px 18px;
+  border-bottom: 1px solid #1c1c1c;
+  font-size: 0.82rem;
+  vertical-align: middle;
+}
+
+.logs-table tr:last-child td {
+  border-bottom: none;
+}
+
+.logs-table tr:hover td {
+  background-color: #151515;
+}
+
+/* Specific Cell Elements */
+.cell-timestamp {
+  font-family: monospace;
+  font-size: 0.78rem;
+  color: #777777;
+  white-space: nowrap;
+}
+
+.cell-event {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event-name {
+  color: #e5e5e5;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.event-switch {
+  color: #666666;
+  font-size: 0.75rem;
+}
+
+.channel-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background-color: #1a1a1a;
+  border: 1px solid #2b2b2b;
+  color: #999999;
+  display: inline-block;
+}
+
+.clearance-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  font-family: monospace;
+}
+
+.clearance-high {
+  background-color: #241616;
+  border: 1px solid #4a2222;
+  color: #e06c75;
+}
+
+.clearance-med {
+  background-color: #221c13;
+  border: 1px solid #45331a;
+  color: #e5c07b;
+}
+
+.clearance-low {
+  background-color: #141f17;
+  border: 1px solid #1e3d26;
+  color: #98c379;
+}
+
+.clearance-exception {
+  background-color: #171d2b;
+  border: 1px solid #25334d;
+  color: #61afef;
+}
+
+.clearance-none {
+  color: #555555;
+  font-size: 0.75rem;
+}
+
+/* Status Badges */
+.status-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-badge.is-success {
+  color: #ededed;
+}
+.status-badge.is-success .status-dot {
+  background-color: #ededed;
+}
+
+.status-badge.is-failed {
+  color: #e06c75;
+}
+.status-badge.is-failed .status-dot {
+  background-color: #e06c75;
+}
+
+.status-badge.is-pending {
+  color: #e5c07b;
+}
+.status-badge.is-pending .status-dot {
+  background-color: #e5c07b;
+}
+
+/* Empty State */
+.logs-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: #666666;
+  font-size: 0.85rem;
+}

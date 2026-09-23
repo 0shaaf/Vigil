@@ -13,7 +13,9 @@ export default async function DashboardLayout({ children }) {
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#07090e" }}>
       <Sidebar userEmail={data.user.email} />
-      <main style={{ flex: 1, padding: 0, overflow: "hidden", height: "100vh" }}>
+      
+      {/* Changed overflow: "hidden" to overflowY: "auto" */}
+      <main style={{ flex: 1, padding: 0, overflowY: "auto", height: "100vh" }}>
         {children}
       </main>
     </div>
