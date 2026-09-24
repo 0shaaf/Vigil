@@ -8,7 +8,7 @@ export default function Home() {
   const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
-    // Check if Supabase dropped the auth code onto the root URL
+    // Check if Supabase dropped the auth co  de onto the root URL
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
 

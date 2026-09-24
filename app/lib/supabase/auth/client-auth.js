@@ -7,7 +7,7 @@ export async function signUpWithEmail(email, password) {
     email,
     password,
     options: {
-      emailRedirectTo: `${window.location.origin}/welcome`,
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
     },
   });
 }
