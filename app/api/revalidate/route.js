@@ -90,23 +90,23 @@ export async function GET(request) {
 
     // A. Switch has NOT tripped
     if (timeLeftMs > 0) {
-      // Warning window: within 2 hours
+      
       if (hoursLeft <= 2) {
-        const { data: existingWarning } = await supabaseAdmin
+        // Use .limit(1) instead of .maybeSingle()
+        const { data: existingWarnings } = await supabaseAdmin
           .from("escalation_logs")
           .select("id")
           .eq("switch_id", sw.id)
           .eq("event_type", "TRIP_WARNING")
           .gt("created_at", sw.last_check_in)
-          .maybeSingle();
+          .limit(1);
 
-        if (existingWarning) {
-          console.log(`[Eval] Warning already logged for "${sw.name}" during this cycle. Skipping.`);
+        if (existingWarnings && existingWarnings.length > 0) {
+          console.log(`[Eval] Warning already logged for "${sw.name}". Skipping.`);
           continue;
         }
 
-        const targetEmail = "randomuserebay@gmail.com";
-        console.log(`[Eval] Dispatching warning email to: ${targetEmail}`);
+        // ... proceed to send email ...
 
         const { data: resendData, error: resendError } = await resend.emails.send({
           from: "onboarding@resend.dev",
@@ -136,8 +136,8 @@ export async function GET(request) {
           recipient_email: targetEmail,
           trust_tier: null,
           status: resendError ? "FAILED" : "SUCCESS",
-          details: resendError 
-            ? `Delivery failed: ${resendError.message}` 
+          details: resendError
+            ? `Delivery failed: ${resendError.message}`
             : `Warning email dispatched. ${hoursLeft.toFixed(1)}h remaining.`,
         });
       }
