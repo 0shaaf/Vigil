@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Helper: Calculate exact deadline from interval JSON
 function getSwitchDeadline(lastCheckIn, interval) {
@@ -135,32 +138,78 @@ export async function GET(request) {
     const linkedContacts = sw.switch_contacts || [];
 
     for (const info of disclosures) {
-      // RULE 1: Specific Contact Exception (-1)
+      // Inside RULE 1: Specific Contact Exception (-1)
       if (info.trust_required === -1) {
-        const target = info.contacts; // Joined via target_contact_id
-        if (target?.email) {
-          // Log dispatch
+        const target = info.contacts;
+        if (target?.email && sw.actions?.email) {
+          let emailStatus = "SUCCESS";
+          let emailError = null;
+
+          try {
+            await resend.emails.send({
+              from: "Vigil System <onboarding@resend.dev>", // Replace with verified domain in production
+              to: target.email,
+              subject: `[DISCLOSURE] Fail-Safe Activated: ${sw.name}`,
+              html: `
+          <h2>Vigil Fail-Safe Protocol Executed</h2>
+          <p>You have been designated as the sole recipient for confidential instructions from switch <strong>${sw.name}</strong>.</p>
+          <hr />
+          <p><strong>Payload:</strong></p>
+          <pre style="background: #111; color: #eee; padding: 15px; border-radius: 6px;">${info.content}</pre>
+        `,
+            });
+          } catch (err) {
+            emailStatus = "FAILED";
+            emailError = err.message;
+          }
+
           await supabaseAdmin.from("escalation_logs").insert({
             usr_id: sw.usr_id,
             switch_id: sw.id,
             event_type: "PAYLOAD_DISPATCHED",
-            channel: sw.actions?.email ? "EMAIL" : "INTERNAL",
+            channel: "EMAIL",
             recipient_email: target.email,
             trust_tier: -1,
-            status: "SUCCESS",
-            details: `Delivered targeted exception payload directly to ${target.contact_name}.`,
+            status: emailStatus,
+            details: emailError
+              ? `Delivery failed: ${emailError}`
+              : `Delivered targeted exception payload directly to ${target.contact_name}.`,
           });
           summary.dispatchesRecorded += 1;
         }
-      } 
-      // RULE 2: Tiered Trust Broadcast (>= 25, 50, 75)
+      }
+
+      // Inside RULE 2: Tiered Trust Broadcast (>= 25, 50, 75)
       else {
-        // Find all contacts who meet or exceed the clearance score
         const eligibleContacts = linkedContacts
           .filter((sc) => sc.trust_score >= info.trust_required && sc.contacts?.email)
-          .sort((a, b) => b.priority_score - a.priority_score); // Sort by escalation priority
+          .sort((a, b) => b.priority_score - a.priority_score);
 
         for (const sc of eligibleContacts) {
+          let emailStatus = "SUCCESS";
+          let emailError = null;
+
+          if (sw.actions?.email) {
+            try {
+              await resend.emails.send({
+                from: "Vigil System <onboarding@resend.dev>",
+                to: sc.contacts.email,
+                subject: `[ALERT] Fail-Safe Disclosure Tier ${info.trust_required}: ${sw.name}`,
+                html: `
+            <h2>Vigil Fail-Safe Protocol Executed</h2>
+            <p>Dear ${sc.contacts.contact_name},</p>
+            <p>You are receiving this automated transmission because switch <strong>${sw.name}</strong> has tripped, and your clearance rating (${sc.trust_score}) meets Tier ${info.trust_required}.</p>
+            <hr />
+            <p><strong>Decrypted Payload:</strong></p>
+            <pre style="background: #111; color: #eee; padding: 15px; border-radius: 6px;">${info.content}</pre>
+          `,
+              });
+            } catch (err) {
+              emailStatus = "FAILED";
+              emailError = err.message;
+            }
+          }
+
           await supabaseAdmin.from("escalation_logs").insert({
             usr_id: sw.usr_id,
             switch_id: sw.id,
@@ -168,18 +217,19 @@ export async function GET(request) {
             channel: sw.actions?.email ? "EMAIL" : "INTERNAL",
             recipient_email: sc.contacts.email,
             trust_tier: info.trust_required,
-            status: "SUCCESS",
-            details: `Delivered Tier ${info.trust_required} payload to ${sc.contacts.contact_name} (Trust: ${sc.trust_score}, Priority: ${sc.priority_score}).`,
+            status: emailStatus,
+            details: emailError
+              ? `Delivery failed: ${emailError}`
+              : `Delivered Tier ${info.trust_required} payload to ${sc.contacts.contact_name}.`,
           });
           summary.dispatchesRecorded += 1;
         }
       }
     }
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      summary,
+    });
   }
-
-  return NextResponse.json({
-    success: true,
-    timestamp: new Date().toISOString(),
-    summary,
-  });
 }
