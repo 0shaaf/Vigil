@@ -1,0 +1,358 @@
+@keyframes vigilSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes vigilPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.checkin-wrapper {
+  min-height: 100vh;
+  background-color: #07090e;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.checkin-card {
+  width: 100%;
+  max-width: 460px;
+  background-color: #0d111a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 28px 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+  box-sizing: border-box;
+}
+
+/* Header */
+.checkin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #1e293b;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #94a3b8;
+}
+
+.checkin-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.pending {
+  background-color: #fbbf24;
+  box-shadow: 0 0 10px #fbbf24;
+  animation: vigilPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-dot.success {
+  background-color: #34d399;
+  box-shadow: 0 0 10px #34d399;
+}
+
+.status-dot.error {
+  background-color: #f43f5e;
+  box-shadow: 0 0 10px #f43f5e;
+}
+
+.header-version {
+  color: #475569;
+}
+
+/* States */
+.checkin-loading {
+  padding: 48px 0;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  margin: 0 auto 12px;
+  border: 2px solid #0284c7;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: vigilSpin 0.8s linear infinite;
+}
+
+.checkin-error-box {
+  padding: 16px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  background-color: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fda4af;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.error-title {
+  font-weight: 700;
+  color: #fb7185;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Success Terminal */
+.success-terminal {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.success-glyph {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 1px solid #10b981;
+  color: #34d399;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+}
+
+.terminal-title {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.terminal-desc {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+}
+
+.meta-box {
+  background-color: #111622;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.meta-row:not(:last-child) {
+  margin-bottom: 6px;
+}
+
+.meta-label {
+  color: #64748b;
+}
+
+.meta-val {
+  color: #e2e8f0;
+}
+
+.status-active {
+  color: #34d399;
+  font-weight: 700;
+}
+
+/* Action View */
+.prompt-header {
+  margin-bottom: 18px;
+}
+
+.prompt-title {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+}
+
+.prompt-desc {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.diagnostic-card {
+  background-color: #111622;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+
+.diagnostic-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.diagnostic-row:not(:last-child) {
+  margin-bottom: 8px;
+}
+
+.diagnostic-row.bordered {
+  padding-top: 8px;
+  border-top: 1px solid #1e293b;
+}
+
+.diag-label {
+  color: #64748b;
+}
+
+.diag-name {
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
+.diag-purpose {
+  color: #cbd5e1;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.diag-expiry {
+  color: #fbbf24;
+  font-size: 11px;
+}
+
+/* Tiers */
+.criticality-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.criticality-badge.critical {
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  background-color: rgba(248, 113, 113, 0.1);
+}
+
+.criticality-badge.sentinel {
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  background-color: rgba(251, 191, 36, 0.1);
+}
+
+.criticality-badge.operational {
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  background-color: rgba(56, 189, 248, 0.1);
+}
+
+/* Buttons */
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  background-color: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.btn-secondary {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  border-radius: 8px;
+  background-color: #1e293b;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.btn-pulse {
+  width: 100%;
+  padding: 14px;
+  background-color: #0284c7;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  transition: background-color 0.15s ease;
+}
+
+.btn-pulse:disabled {
+  background-color: #075985;
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: vigilSpin 0.8s linear infinite;
+  display: inline-block;
+}
+
+.terminal-note {
+  margin-top: 14px;
+  font-size: 10px;
+  text-align: center;
+  color: #475569;
+  font-family: system-ui, -apple-system, sans-serif;
+}
