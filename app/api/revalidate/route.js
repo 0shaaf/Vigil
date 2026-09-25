@@ -4,7 +4,6 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Helper: Calculate exact deadline from interval JSON
 function getSwitchDeadline(lastCheckIn, interval) {
   const deadline = new Date(lastCheckIn);
   if (interval?.months) deadline.setMonth(deadline.getMonth() + Number(interval.months));
@@ -27,14 +26,14 @@ export async function GET(request) {
     return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
   }
 
-  // 2. Initialize Service-Role Client (bypasses RLS for system daemon)
+  // 2. Initialize Service-Role Client
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { persistSession: false } }
   );
 
-  // 3. Fetch all active switches with relational contacts and disclosures
+  // 3. Fetch active switches
   const { data: switches, error: fetchErr } = await supabaseAdmin
     .from("switches")
     .select(`
@@ -74,6 +73,7 @@ export async function GET(request) {
   const now = Date.now();
   const summary = {
     evaluated: switches.length,
+    warningsSent: 0,
     triggered: 0,
     dispatchesRecorded: 0,
   };
@@ -84,22 +84,61 @@ export async function GET(request) {
 
     const deadline = getSwitchDeadline(sw.last_check_in, sw.check_in_interval);
     const timeLeftMs = deadline.getTime() - now;
+    const hoursLeft = timeLeftMs / (1000 * 60 * 60);
+
+    console.log(`[Eval] Switch "${sw.name}" | Hours remaining: ${hoursLeft.toFixed(2)}h`);
 
     // A. Switch has NOT tripped
     if (timeLeftMs > 0) {
-      const hoursLeft = timeLeftMs / (1000 * 60 * 60);
-
-      // Warning window: between 0 and 2 hours left
+      // Warning window: within 2 hours
       if (hoursLeft <= 2) {
-        // Record trip warning telemetry
+        const { data: existingWarning } = await supabaseAdmin
+          .from("escalation_logs")
+          .select("id")
+          .eq("switch_id", sw.id)
+          .eq("event_type", "TRIP_WARNING")
+          .gt("created_at", sw.last_check_in)
+          .maybeSingle();
+
+        if (existingWarning) {
+          console.log(`[Eval] Warning already logged for "${sw.name}" during this cycle. Skipping.`);
+          continue;
+        }
+
+        const targetEmail = "randomuserebay@gmail.com";
+        console.log(`[Eval] Dispatching warning email to: ${targetEmail}`);
+
+        const { data: resendData, error: resendError } = await resend.emails.send({
+          from: "onboarding@resend.dev",
+          to: targetEmail,
+          subject: `[ACTION REQUIRED] Vigil Reminder: ${sw.name} expires soon`,
+          html: `
+            <h2>Heartbeat Expiration Warning</h2>
+            <p>Your fail-safe switch <strong>${sw.name}</strong> will trigger in approximately <strong>${hoursLeft.toFixed(1)} hours</strong>.</p>
+            <p>Log in and perform a pulse check-in to reset the timer and prevent privileged disclosure dispatch.</p>
+            <hr />
+            <a href="https://vigil-chi-seven.vercel.app/dashboard" style="display:inline-block;padding:10px 18px;background:#0284c7;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Check In Now</a>
+          `,
+        });
+
+        if (resendError) {
+          console.error("❌ Resend API Error:", resendError);
+        } else {
+          console.log("✅ Resend Success ID:", resendData?.id);
+          summary.warningsSent += 1;
+        }
+
         await supabaseAdmin.from("escalation_logs").insert({
           usr_id: sw.usr_id,
           switch_id: sw.id,
           event_type: "TRIP_WARNING",
-          channel: "INTERNAL",
+          channel: "EMAIL",
+          recipient_email: targetEmail,
           trust_tier: null,
-          status: "SUCCESS",
-          details: `Switch [${sw.name}] is within ${hoursLeft.toFixed(1)}h of expiration.`,
+          status: resendError ? "FAILED" : "SUCCESS",
+          details: resendError 
+            ? `Delivery failed: ${resendError.message}` 
+            : `Warning email dispatched. ${hoursLeft.toFixed(1)}h remaining.`,
         });
       }
       continue;
@@ -108,7 +147,6 @@ export async function GET(request) {
     // B. Switch HAS TRIPPED (timeLeftMs <= 0)
     summary.triggered += 1;
 
-    // Check if this switch was already triggered to avoid spam loops
     const { data: existingTrigger } = await supabaseAdmin
       .from("escalation_logs")
       .select("id")
@@ -118,11 +156,9 @@ export async function GET(request) {
       .maybeSingle();
 
     if (existingTrigger) {
-      // Already triggered for this pulse cycle; skip to prevent re-sending
       continue;
     }
 
-    // Log the primary trigger event
     await supabaseAdmin.from("escalation_logs").insert({
       usr_id: sw.usr_id,
       switch_id: sw.id,
@@ -133,35 +169,25 @@ export async function GET(request) {
       details: `Switch [${sw.name}] timer expired. Initiating payload distribution.`,
     });
 
-    // 5. Run the Clearance Engine for all disclosures (info_to_release)
     const disclosures = sw.info_to_release || [];
     const linkedContacts = sw.switch_contacts || [];
 
     for (const info of disclosures) {
-      // Inside RULE 1: Specific Contact Exception (-1)
       if (info.trust_required === -1) {
         const target = info.contacts;
         if (target?.email && sw.actions?.email) {
-          let emailStatus = "SUCCESS";
-          let emailError = null;
-
-          try {
-            await resend.emails.send({
-              from: "Vigil System <onboarding@resend.dev>", // Replace with verified domain in production
-              to: target.email,
-              subject: `[DISCLOSURE] Fail-Safe Activated: ${sw.name}`,
-              html: `
-          <h2>Vigil Fail-Safe Protocol Executed</h2>
-          <p>You have been designated as the sole recipient for confidential instructions from switch <strong>${sw.name}</strong>.</p>
-          <hr />
-          <p><strong>Payload:</strong></p>
-          <pre style="background: #111; color: #eee; padding: 15px; border-radius: 6px;">${info.content}</pre>
-        `,
-            });
-          } catch (err) {
-            emailStatus = "FAILED";
-            emailError = err.message;
-          }
+          const { data: resendData, error: resendError } = await resend.emails.send({
+            from: "onboarding@resend.dev",
+            to: target.email,
+            subject: `[DISCLOSURE] Fail-Safe Activated: ${sw.name}`,
+            html: `
+              <h2>Vigil Fail-Safe Protocol Executed</h2>
+              <p>You have been designated as the sole recipient for confidential instructions from switch <strong>${sw.name}</strong>.</p>
+              <hr />
+              <p><strong>Payload:</strong></p>
+              <pre style="background: #111; color: #eee; padding: 15px; border-radius: 6px;">${info.content}</pre>
+            `,
+          });
 
           await supabaseAdmin.from("escalation_logs").insert({
             usr_id: sw.usr_id,
@@ -170,17 +196,14 @@ export async function GET(request) {
             channel: "EMAIL",
             recipient_email: target.email,
             trust_tier: -1,
-            status: emailStatus,
-            details: emailError
-              ? `Delivery failed: ${emailError}`
+            status: resendError ? "FAILED" : "SUCCESS",
+            details: resendError
+              ? `Delivery failed: ${resendError.message}`
               : `Delivered targeted exception payload directly to ${target.contact_name}.`,
           });
           summary.dispatchesRecorded += 1;
         }
-      }
-
-      // Inside RULE 2: Tiered Trust Broadcast (>= 25, 50, 75)
-      else {
+      } else {
         const eligibleContacts = linkedContacts
           .filter((sc) => sc.trust_score >= info.trust_required && sc.contacts?.email)
           .sort((a, b) => b.priority_score - a.priority_score);
@@ -190,23 +213,23 @@ export async function GET(request) {
           let emailError = null;
 
           if (sw.actions?.email) {
-            try {
-              await resend.emails.send({
-                from: "Vigil System <onboarding@resend.dev>",
-                to: sc.contacts.email,
-                subject: `[ALERT] Fail-Safe Disclosure Tier ${info.trust_required}: ${sw.name}`,
-                html: `
-            <h2>Vigil Fail-Safe Protocol Executed</h2>
-            <p>Dear ${sc.contacts.contact_name},</p>
-            <p>You are receiving this automated transmission because switch <strong>${sw.name}</strong> has tripped, and your clearance rating (${sc.trust_score}) meets Tier ${info.trust_required}.</p>
-            <hr />
-            <p><strong>Decrypted Payload:</strong></p>
-            <pre style="background: #111; color: #eee; padding: 15px; border-radius: 6px;">${info.content}</pre>
-          `,
-              });
-            } catch (err) {
+            const { data: resendData, error: resendError } = await resend.emails.send({
+              from: "onboarding@resend.dev",
+              to: sc.contacts.email,
+              subject: `[ALERT] Fail-Safe Disclosure Tier ${info.trust_required}: ${sw.name}`,
+              html: `
+                <h2>Vigil Fail-Safe Protocol Executed</h2>
+                <p>Dear ${sc.contacts.contact_name},</p>
+                <p>You are receiving this automated transmission because switch <strong>${sw.name}</strong> has tripped, and your clearance rating (${sc.trust_score}) meets Tier ${info.trust_required}.</p>
+                <hr />
+                <p><strong>Decrypted Payload:</strong></p>
+                <pre style="background: #111; color: #eee; padding: 15px; border-radius: 6px;">${info.content}</pre>
+              `,
+            });
+
+            if (resendError) {
               emailStatus = "FAILED";
-              emailError = err.message;
+              emailError = resendError.message;
             }
           }
 
@@ -226,10 +249,12 @@ export async function GET(request) {
         }
       }
     }
-    return NextResponse.json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      summary,
-    });
   }
+
+  // 5. Always return response outside the loop
+  return NextResponse.json({
+    success: true,
+    timestamp: new Date().toISOString(),
+    summary,
+  });
 }
