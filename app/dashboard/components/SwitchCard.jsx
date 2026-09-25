@@ -6,38 +6,50 @@ function getCountdown(lastCheckIn, interval) {
   if (interval?.months) target.setMonth(target.getMonth() + Number(interval.months));
   if (interval?.days) target.setDate(target.getDate() + Number(interval.days));
   if (interval?.hours) target.setHours(target.getHours() + Number(interval.hours));
+  if (interval?.minutes) target.setMinutes(target.getMinutes() + Number(interval.minutes));
 
   const diffMs = target.getTime() - Date.now();
   if (diffMs <= 0) return "EXPIRED";
 
-  const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const days = Math.floor(totalHours / 24);
-  const hours = totalHours % 24;
+  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
 
-  return days > 0 ? `${days}d ${hours}h` : `${totalHours}h`;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m remaining`;
 }
 
 export default function SwitchCard({ switchData, contactsCount = 0, payloads = [] }) {
   const countdown = getCountdown(switchData.last_check_in, switchData.check_in_interval);
-  const actions = switchData.actions || { call: false, email: false, forwardData: false };
+  const actions = switchData.actions || {};
+  const modules = actions.modules || {
+    beacon: actions.email ?? true,
+    data_release: false,
+    purge: false,
+    lockdown: false,
+  };
 
-  // Calculate payload tiers
-  const tierCounts = payloads.reduce(
-    (acc, p) => {
-      if (p.trust_required === -1) acc.targeted += 1;
-      else if (p.trust_required >= 75) acc.high += 1;
-      else if (p.trust_required >= 50) acc.med += 1;
-      else acc.low += 1;
-      return acc;
-    },
-    { high: 0, med: 0, low: 0, targeted: 0 }
-  );
+  const criticalityClass = 
+    switchData.criticality === "CRITICAL" ? "tier-high" :
+    switchData.criticality === "SENTINEL" ? "tier-low" : "tier-med";
 
   return (
     <article className="switch-card">
-      {/* Top: Name & Edit Route */}
+      {/* Top: Name, Purpose Badge & Edit Route */}
       <div className="card-head">
-        <h3 className="card-title">{switchData.name}</h3>
+        <div>
+          <div style={{ display: "flex", gap: "6px", marginBottom: "6px", alignItems: "center" }}>
+            <span className={`tier-pill ${criticalityClass}`}>
+              {switchData.criticality || "OPERATIONAL"}
+            </span>
+            <span className="action-badge" style={{ fontSize: "0.62rem" }}>
+              {switchData.purpose || "PERSONAL"}
+            </span>
+          </div>
+          <h3 className="card-title">{switchData.name}</h3>
+        </div>
         <Link
           href={`/dashboard/switches/${switchData.id}`}
           className="edit-btn"
@@ -63,30 +75,30 @@ export default function SwitchCard({ switchData, contactsCount = 0, payloads = [
         </div>
       </div>
 
-      {/* Middle-Bottom: Escalation Actions Matrix */}
+      {/* Middle-Bottom: Active Action Modules */}
       <div className="card-actions-strip">
-        <span className={`action-badge ${actions.email ? "is-enabled" : ""}`}>Email</span>
-        <span className={`action-badge ${actions.call ? "is-enabled" : ""}`}>Call</span>
-        <span className={`action-badge ${actions.forwardData ? "is-enabled" : ""}`}>Forward</span>
+        <span className={`action-badge ${modules.beacon ? "is-enabled" : ""}`}>Beacon</span>
+        <span className={`action-badge ${modules.data_release ? "is-enabled" : ""}`}>Release</span>
+        <span className={`action-badge ${modules.purge ? "is-enabled" : ""}`}>Purge</span>
+        <span className={`action-badge ${modules.lockdown ? "is-enabled" : ""}`}>Lockdown</span>
       </div>
 
       <hr className="card-divider" />
 
-      {/* Bottom: Payloads & Contacts Breakdown */}
+      {/* Bottom: Contacts & Notes */}
       <div className="card-footer-metrics">
         <div className="metric-col">
-          <span className="metric-label">Contacts</span>
-          <span className="metric-value">{contactsCount} Linked</span>
+          <span className="metric-label">Interval</span>
+          <span className="metric-value">
+            {switchData.check_in_interval?.days ? `${switchData.check_in_interval.days}d ` : ""}
+            {switchData.check_in_interval?.hours ? `${switchData.check_in_interval.hours}h ` : ""}
+            {switchData.check_in_interval?.minutes ? `${switchData.check_in_interval.minutes}m` : ""}
+            {!switchData.check_in_interval?.days && !switchData.check_in_interval?.hours && !switchData.check_in_interval?.minutes ? "None" : ""}
+          </span>
         </div>
         <div className="metric-col">
-          <span className="metric-label">Payload Tiers</span>
-          <div className="tier-pills">
-            {tierCounts.high > 0 && <span className="tier-pill tier-high">{tierCounts.high}H</span>}
-            {tierCounts.med > 0 && <span className="tier-pill tier-med">{tierCounts.med}M</span>}
-            {tierCounts.low > 0 && <span className="tier-pill tier-low">{tierCounts.low}L</span>}
-            {tierCounts.targeted > 0 && <span className="tier-pill tier-targeted">{tierCounts.targeted}T</span>}
-            {payloads.length === 0 && <span className="tier-none">None</span>}
-          </div>
+          <span className="metric-label">Recipients</span>
+          <span className="metric-value">{contactsCount || switchData.switch_contacts?.length || 0} Linked</span>
         </div>
       </div>
     </article>

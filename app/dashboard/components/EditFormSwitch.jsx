@@ -13,25 +13,28 @@ import "../css/switch-form.css";
 
 function calculateDeadline(lastCheckIn, interval) {
   if (!lastCheckIn) return { text: "Uninitialized", isArmed: false };
-
   const deadline = new Date(lastCheckIn);
   if (interval?.months) deadline.setMonth(deadline.getMonth() + Number(interval.months));
   if (interval?.days) deadline.setDate(deadline.getDate() + Number(interval.days));
   if (interval?.hours) deadline.setHours(deadline.getHours() + Number(interval.hours));
+  if (interval?.minutes) deadline.setMinutes(deadline.getMinutes() + Number(interval.minutes));
 
   const diffMs = deadline.getTime() - Date.now();
   if (diffMs <= 0) return { text: "TRIP EXPIRED", isArmed: false, isTripped: true };
 
-  const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const days = Math.floor(totalHours / 24);
-  const hours = totalHours % 24;
+  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
 
-  return {
-    text: days > 0 ? `${days}d ${hours}h remaining` : `${totalHours}h remaining`,
-    isArmed: true,
-    isTripped: false,
-  };
+  let text = "";
+  if (days > 0) text = `${days}d ${hours}h remaining`;
+  else if (hours > 0) text = `${hours}h ${minutes}m remaining`;
+  else text = `${minutes}m remaining`;
+
+  return { text, isArmed: true, isTripped: false };
 }
+
 
 export default function EditSwitchForm({ switchData, availableContacts = [] }) {
   const router = useRouter();
@@ -59,10 +62,10 @@ export default function EditSwitchForm({ switchData, availableContacts = [] }) {
   const initialInfoRows =
     switchData.info_to_release && switchData.info_to_release.length > 0
       ? switchData.info_to_release.map((row) => ({
-          content: row.content,
-          trust_required: row.trust_required,
-          target_contact_id: row.target_contact_id || "",
-        }))
+        content: row.content,
+        trust_required: row.trust_required,
+        target_contact_id: row.target_contact_id || "",
+      }))
       : [{ content: "", trust_required: 50, target_contact_id: "" }];
 
   const {
@@ -75,10 +78,13 @@ export default function EditSwitchForm({ switchData, availableContacts = [] }) {
     defaultValues: {
       name: switchData.name || "",
       description: switchData.description || "",
+      purpose: switchData.purpose || "PERSONAL",
+      criticality: switchData.criticality || "OPERATIONAL",
       check_in_interval: {
         months: switchData.check_in_interval?.months || 0,
         days: switchData.check_in_interval?.days || 0,
         hours: switchData.check_in_interval?.hours || 0,
+        minutes: switchData.check_in_interval?.minutes || 0,
       },
       actions: {
         email: Boolean(switchData.actions?.email),
@@ -147,9 +153,8 @@ export default function EditSwitchForm({ switchData, availableContacts = [] }) {
       <div className="status-banner">
         <div className="status-pill-group">
           <div
-            className={`status-indicator ${
-              deadline.isTripped ? "is-tripped" : deadline.isArmed ? "is-armed" : ""
-            }`}
+            className={`status-indicator ${deadline.isTripped ? "is-tripped" : deadline.isArmed ? "is-armed" : ""
+              }`}
           />
           <span className="status-label">
             {deadline.isTripped ? "TRIPPED" : deadline.isArmed ? "ARMED" : "INACTIVE"}
@@ -234,33 +239,22 @@ export default function EditSwitchForm({ switchData, availableContacts = [] }) {
         {/* 3. Check-In Interval */}
         <section className="form-section">
           <span className="section-legend">Trip Interval</span>
-          <div className="interval-grid">
+          <div className="interval-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
             <div className="interval-box">
               <label>Months</label>
-              <input
-                type="number"
-                min="0"
-                max="24"
-                {...register("check_in_interval.months")}
-              />
+              <input type="number" min="0" max="24" {...register("check_in_interval.months")} />
             </div>
             <div className="interval-box">
               <label>Days</label>
-              <input
-                type="number"
-                min="0"
-                max="365"
-                {...register("check_in_interval.days")}
-              />
+              <input type="number" min="0" max="365" {...register("check_in_interval.days")} />
             </div>
             <div className="interval-box">
               <label>Hours</label>
-              <input
-                type="number"
-                min="0"
-                max="23"
-                {...register("check_in_interval.hours")}
-              />
+              <input type="number" min="0" max="23" {...register("check_in_interval.hours")} />
+            </div>
+            <div className="interval-box">
+              <label>Minutes</label>
+              <input type="number" min="0" max="59" {...register("check_in_interval.minutes")} />
             </div>
           </div>
         </section>

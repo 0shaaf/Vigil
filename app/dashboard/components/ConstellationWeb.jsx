@@ -228,9 +228,9 @@ export default function ConstellationWeb({ switches = [] }) {
           <div>
             Interval:{" "}
             <span className="tooltip-meta">
-              {hoveredSwitch.check_in_interval?.months || 0}m{" "}
-              {hoveredSwitch.check_in_interval?.days || 0}d{" "}
-              {hoveredSwitch.check_in_interval?.hours || 0}h
+              {hoveredSwitch.check_in_interval?.days ? `${hoveredSwitch.check_in_interval.days}d ` : ""}
+              {hoveredSwitch.check_in_interval?.hours ? `${hoveredSwitch.check_in_interval.hours}h ` : ""}
+              {hoveredSwitch.check_in_interval?.minutes ? `${hoveredSwitch.check_in_interval.minutes}m` : ""}
             </span>
           </div>
           <div>
