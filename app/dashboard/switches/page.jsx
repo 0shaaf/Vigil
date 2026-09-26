@@ -9,38 +9,47 @@ export default async function Switches() {
   const switches = data || [];
   return (
     <div className="switches-page">
-      <header className="switches-topbar">
-        <div>
-          <h1 className="switches-heading">Switches</h1>
-          <p className="switches-subheading">
-            Active fail-safe triggers and release schedules
-          </p>
-        </div>
-        <Link href="/dashboard/switches/create" className="btn-new-switch">
-          + New Switch
-        </Link>
-      </header>
+      {/* Overhead Lighting & Horizon Grid Layers */}
+      <div className="switches-top-glow-line" />
+      <div className="switches-overhead-glow" />
+      <div className="switches-ambient-ray" />
+      <div className="switches-grid-backdrop" />
 
-      {error && (
-        <div className="switches-error">
-          Failed to load switches: {error.message || "Database error"}
-        </div>
-      )}
-
-      {switches.length === 0 && !error ? (
-        <div className="switches-empty-state">
-          <p>No switches armed.</p>
-          <Link href="/dashboard/switches/create" className="empty-state-link">
-            Arm your first switch →
+      {/* Main Content Area */}
+      <div className="switches-content-shell">
+        <header className="switches-topbar">
+          <div>
+            <h1 className="switches-heading">Switches</h1>
+            <p className="switches-subheading">
+              Active fail-safe triggers and release schedules
+            </p>
+          </div>
+          <Link href="/dashboard/switches/create" className="btn-new-switch">
+            + New Switch
           </Link>
-        </div>
-      ) : (
-        <section className="switches-grid">
-          {switches.map((item) => (
-            <SwitchCard key={item.id} switchData={item} />
-          ))}
-        </section>
-      )}
+        </header>
+
+        {error && (
+          <div className="switches-error">
+            Failed to load switches: {error.message || "Database error"}
+          </div>
+        )}
+
+        {switches.length === 0 && !error ? (
+          <div className="switches-empty-state">
+            <p>No switches armed.</p>
+            <Link href="/dashboard/switches/create" className="empty-state-link">
+              Arm your first switch →
+            </Link>
+          </div>
+        ) : (
+          <section className="switches-grid">
+            {switches.map((item) => (
+              <SwitchCard key={item.id} switchData={item} />
+            ))}
+          </section>
+        )}
+      </div>
     </div>
   );
 }

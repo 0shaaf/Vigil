@@ -1,4 +1,7 @@
+import React from "react";
 import Link from "next/link";
+import { Radio, Share2, Trash2, Lock } from "lucide-react";
+import "../css/switch-card.css";
 
 function getCountdown(lastCheckIn, interval) {
   if (!lastCheckIn) return "Awaiting Pulse";
@@ -21,7 +24,7 @@ function getCountdown(lastCheckIn, interval) {
   return `${minutes}m remaining`;
 }
 
-export default function SwitchCard({ switchData, contactsCount = 0, payloads = [] }) {
+export default function SwitchCard({ switchData }) {
   const countdown = getCountdown(switchData.last_check_in, switchData.check_in_interval);
   const actions = switchData.actions || {};
   const modules = actions.modules || {
@@ -31,76 +34,82 @@ export default function SwitchCard({ switchData, contactsCount = 0, payloads = [
     lockdown: false,
   };
 
-  const criticalityClass = 
-    switchData.criticality === "CRITICAL" ? "tier-high" :
-    switchData.criticality === "SENTINEL" ? "tier-low" : "tier-med";
-
   return (
-    <article className="switch-card">
-      {/* Top: Name, Purpose Badge & Edit Route */}
-      <div className="card-head">
-        <div>
-          <div style={{ display: "flex", gap: "6px", marginBottom: "6px", alignItems: "center" }}>
-            <span className={`tier-pill ${criticalityClass}`}>
+    <Link
+      href={`/dashboard/switches/${switchData.id}`}
+      className="switch-card-outer"
+      title={`Configure ${switchData.name}`}
+    >
+      {/* Moving Orbit Dot */}
+      <div className="switch-card-dot" />
+
+      <div className="switch-card-inner">
+        {/* Slanted Light Ray Effect */}
+        <div className="switch-card-ray" />
+
+        {/* HUD Reticle Boundary Lines */}
+        <div className="reticle-line topl" />
+        <div className="reticle-line leftl" />
+        <div className="reticle-line bottoml" />
+        <div className="reticle-line rightl" />
+
+        {/* Hero Stack */}
+        <div className="hud-center">
+          <h2 className="hud-card-name">{switchData.name}</h2>
+          
+          <div className="hud-countdown-subtext">
+            {countdown === "EXPIRED" ? (
+              <span className="expired">TRIGGER // EXPIRED</span>
+            ) : countdown === "Awaiting Pulse" ? (
+              <span>AWAITING PULSE</span>
+            ) : (
+              <span>
+                TRIGGERS IN <span className="highlight">{countdown}</span>
+              </span>
+            )}
+          </div>
+
+          <div className="hero-embedded-capsule">
+            <span className="capsule-tier">
               {switchData.criticality || "OPERATIONAL"}
             </span>
-            <span className="action-badge" style={{ fontSize: "0.62rem" }}>
+            <span className="capsule-divider" />
+            <span className="capsule-purpose">
               {switchData.purpose || "PERSONAL"}
             </span>
           </div>
-          <h3 className="card-title">{switchData.name}</h3>
         </div>
-        <Link
-          href={`/dashboard/switches/${switchData.id}`}
-          className="edit-btn"
-          title="Configure Switch"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-          </svg>
-        </Link>
-      </div>
 
-      {/* Middle: Countdown Timer */}
-      <div className="card-timer-row">
-        <div className="timer-label-group">
-          <span className="timer-prefix">Triggers In</span>
-          <span className="timer-val">{countdown}</span>
-        </div>
-        <div className="clock-glyph">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-        </div>
-      </div>
-
-      {/* Middle-Bottom: Active Action Modules */}
-      <div className="card-actions-strip">
-        <span className={`action-badge ${modules.beacon ? "is-enabled" : ""}`}>Beacon</span>
-        <span className={`action-badge ${modules.data_release ? "is-enabled" : ""}`}>Release</span>
-        <span className={`action-badge ${modules.purge ? "is-enabled" : ""}`}>Purge</span>
-        <span className={`action-badge ${modules.lockdown ? "is-enabled" : ""}`}>Lockdown</span>
-      </div>
-
-      <hr className="card-divider" />
-
-      {/* Bottom: Contacts & Notes */}
-      <div className="card-footer-metrics">
-        <div className="metric-col">
-          <span className="metric-label">Interval</span>
-          <span className="metric-value">
-            {switchData.check_in_interval?.days ? `${switchData.check_in_interval.days}d ` : ""}
-            {switchData.check_in_interval?.hours ? `${switchData.check_in_interval.hours}h ` : ""}
-            {switchData.check_in_interval?.minutes ? `${switchData.check_in_interval.minutes}m` : ""}
-            {!switchData.check_in_interval?.days && !switchData.check_in_interval?.hours && !switchData.check_in_interval?.minutes ? "None" : ""}
-          </span>
-        </div>
-        <div className="metric-col">
-          <span className="metric-label">Recipients</span>
-          <span className="metric-value">{contactsCount || switchData.switch_contacts?.length || 0} Linked</span>
+        {/* Centered Bottom Tray with Increased Lucide Icons */}
+        <div className="hud-footer">
+          <div className="hud-modules">
+            <span
+              className={`module-icon-pip ${modules.beacon ? "active" : ""}`}
+              title="Emergency Beacon"
+            >
+              <Radio size={14} strokeWidth={2} />
+            </span>
+            <span
+              className={`module-icon-pip ${modules.data_release ? "active" : ""}`}
+              title="Data Release"
+            >
+              <Share2 size={14} strokeWidth={2} />
+            </span>
+            <span
+              className={`module-icon-pip ${modules.purge ? "active" : ""}`}
+              title="Destructive Purge"
+            >
+              <Trash2 size={14} strokeWidth={2} />
+            </span>
+            <span
+              className={`module-icon-pip ${modules.lockdown ? "active" : ""}`}
+              title="Lockdown Webhook"
+            >
+              <Lock size={14} strokeWidth={2} />
+            </span>
+          </div>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }

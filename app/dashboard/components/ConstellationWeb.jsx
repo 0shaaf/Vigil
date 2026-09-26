@@ -58,7 +58,7 @@ export default function ConstellationWeb({ switches = [] }) {
     setHeartbeatStatus("Transmitting heartbeat...");
 
     const err = await triggerHeartbeat();
-    if (!err) {
+    if (err.success){
       setHeartbeatStatus("All Switches Renewed");
       setTimeout(() => setHeartbeatStatus(""), 3000);
     } else {

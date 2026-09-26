@@ -1,0 +1,266 @@
+@keyframes moveDot {
+  0%, 100% {
+    top: 40px;
+    left: calc(100% - 28px);
+  }
+  25% {
+    top: 40px;
+    left: 28px;
+  }
+  50% {
+    top: calc(100% - 40px);
+    left: 28px;
+  }
+  75% {
+    top: calc(100% - 40px);
+    left: calc(100% - 28px);
+  }
+}
+
+/* Outer Shell - Entire Card is a Link */
+.switch-card-outer {
+  width: 100%;
+  height: 270px;
+  border-radius: 10px;
+  padding: 1px;
+  background: radial-gradient(circle 230px at 0% 0%, #ffffff, #0c0d0d);
+  position: relative;
+  box-sizing: border-box;
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.switch-card-outer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.9), 0 0 25px rgba(255, 255, 255, 0.08);
+}
+
+/* Moving Orbit Dot - Triggered on Hover */
+.switch-card-dot {
+  width: 5px;
+  aspect-ratio: 1;
+  position: absolute;
+  background-color: #ffffff;
+  box-shadow: 0 0 10px #ffffff;
+  border-radius: 100px;
+  z-index: 5;
+  top: 40px;
+  left: calc(100% - 28px);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.switch-card-outer:hover .switch-card-dot {
+  opacity: 1;
+  animation: moveDot 6s linear infinite;
+}
+
+/* Inner Card Base */
+.switch-card-inner {
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 9px;
+  border: 1px solid #202222;
+  background: radial-gradient(circle 280px at 0% 0%, #3a3d45 0%, #0c0d0e 75%);
+  position: relative;
+  box-sizing: border-box;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+/* Slanted Light Ray */
+.switch-card-ray {
+  width: 220px;
+  height: 45px;
+  border-radius: 100px;
+  position: absolute;
+  background-color: #c7c7c7;
+  opacity: 0.18;
+  box-shadow: 0 0 50px #ffffff;
+  filter: blur(10px);
+  transform-origin: 10%;
+  top: 0;
+  left: 0;
+  transform: rotate(40deg);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.switch-card-outer:hover .switch-card-ray {
+  opacity: 0.35;
+}
+
+/* HUD Reticle Boundary Lines - Hardware Pixel Snapped */
+.reticle-line {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+  transform: translateZ(0);
+}
+
+.reticle-line.topl {
+  top: 40px;
+  left: 0;
+  width: 100%;
+  height: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.11);
+}
+
+.reticle-line.bottoml {
+  bottom: 40px;
+  left: 0;
+  width: 100%;
+  height: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+}
+
+.reticle-line.leftl {
+  left: 28px;
+  top: 0;
+  width: 0;
+  height: 100%;
+  border-left: 1px solid rgba(255, 255, 255, 0.11);
+}
+
+.reticle-line.rightl {
+  right: 28px;
+  top: 0;
+  width: 0;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.11);
+}
+
+/* Hero Section (Center Stack) */
+.hud-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 82%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.hud-card-name {
+  font-weight: 900;
+  font-size: clamp(1.4rem, 2.8vw, 1.9rem);
+  line-height: 1.15;
+  margin: 0 0 6px 0;
+  background: linear-gradient(45deg, #18181b 4%, #ffffff 50%, #18181b 96%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.03em;
+  word-break: break-word;
+}
+
+.hud-countdown-subtext {
+  font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+  font-size: 10px;
+  color: #71717a;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hud-countdown-subtext .highlight {
+  color: #f4f4f5;
+  font-weight: 700;
+}
+
+.hud-countdown-subtext .expired {
+  color: #f87171;
+  font-weight: 700;
+}
+
+/* 4. Embedded Capsule with Increased Typography */
+.hero-embedded-capsule {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: #090a0d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.85),
+    0 1px 1px rgba(255, 255, 255, 0.04);
+}
+
+.capsule-tier {
+  font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  text-shadow: 0 -1px 0 #000000;
+}
+
+.capsule-divider {
+  width: 1px;
+  height: 10px;
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+.capsule-purpose {
+  font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  text-transform: uppercase;
+  text-shadow: 0 -1px 0 #000000;
+}
+
+/* 2. Horizontally Centered Bottom Shelf */
+.hud-footer {
+  position: absolute;
+  bottom: 8px;
+  left: 28px;
+  right: 28px;
+  height: 26px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.hud-modules {
+  display: flex;
+  gap: 8px;
+}
+
+/* 1 & 3. Larger Icon Frames, No Box Shadows */
+.module-icon-pip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #475569;
+  box-shadow: none;
+  transition: all 0.15s ease;
+}
+
+.module-icon-pip.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: none; /* Flat, premium surface */
+}

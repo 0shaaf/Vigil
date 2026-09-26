@@ -1,59 +1,46 @@
-import Link from "next/link";
+import React from "react";
 import { notFound, redirect } from "next/navigation";
+import { getSwitchById } from "@/app/actions/switches"; // Adjust to your server action import path
+import EditFormSwitch from "../../components/EditFormSwitch";
+import "../../css/edit-switch.css";
 import { createSupabaseServerClient } from "@/app/lib/supabase/server-client";
-import { getSwitchById } from "@/app/actions/switches";
-import EditSwitchForm from "../../components/EditFormSwitch";
-import "../../css/switch-form.css";
 
-export default async function SwitchDetailPage({ params }) {
+export const metadata = {
+  title: "Configure Switch | Vigil",
+};
+
+export default async function EditSwitchPage({ params }) {
   const resolvedParams = await params;
   const swid = resolvedParams.swid;
+  
 
+  console.log("Params : " , resolvedParams)
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/");
+  if (!user) {
+    redirect("/login");
+  }
 
-  // Fetch target switch data and all available contacts in parallel
-  const [switchRes, contactsRes] = await Promise.all([
-    getSwitchById(swid),
-    supabase
-      .from("contacts")
-      .select("id, contact_name, email")
-      .eq("usr_id", user.id)
-      .order("contact_name", { ascending: true }),
-  ]);
+  const switchData = await getSwitchById(swid);
 
-  if (switchRes.error || !switchRes.data) {
+  if (!switchData || switchData.usr_id !== user.id) {
     notFound();
   }
 
   return (
-    <div className="switch-view-container">
-      {/* Breadcrumb Navigation */}
-      <nav className="view-breadcrumb">
-        <Link href="/dashboard/switches">Switches</Link>
-        <span className="view-breadcrumb-separator">/</span>
-        <span>{switchRes.data.name}</span>
-      </nav>
-
-      {/* Header */}
-      <header className="view-header">
-        <div>
-          <h1 className="view-title">{switchRes.data.name}</h1>
-          <p className="view-description">
-            Update trigger criteria, clearance assignments, and disclosure rows.
-          </p>
-        </div>
+    <main className="edit-switch-container">
+      <header className="edit-switch-header">
+        <h1>
+          Configure Switch
+          <span className="edit-header-badge">#{switchData.id}</span>
+        </h1>
+        <p>Modify duration thresholds, criticality tiers, and autonomous action modules.</p>
       </header>
 
-      {/* Pre-populated Client Edit Form */}
-      <EditSwitchForm
-        switchData={switchRes.data}
-        availableContacts={contactsRes.data || []}
-      />
-    </div>
+      <EditFormSwitch initialSwitch={switchData} />
+    </main>
   );
 }

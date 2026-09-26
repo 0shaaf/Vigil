@@ -199,7 +199,7 @@ export async function createSwitch(payload) {
  */
 
 export async function updateSwitch(switchId, updatePayload) {
-  const supabase = await createClient();
+  const supabase = await createSupabaseServerClient();
 
   // 1. Fetch current switch to merge complex JSON fields safely
   const { data: existing, error: fetchErr } = await supabase
