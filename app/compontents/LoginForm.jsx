@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmail, signInWithGoogle } from "@/app/lib/supabase/auth/client-auth";
+import Link from "next/link";
 import "./CSS/AuthForm.css";
 
 export default function LoginForm({ onToggleMode }) {
@@ -63,7 +64,9 @@ export default function LoginForm({ onToggleMode }) {
         />
 
         <p className="page-link">
-          <span className="page-link-label">Forgot Password?</span>
+          <Link href="/forgot-password" className="login-forgot-link">
+            Forgot Password?
+          </Link>
         </p>
 
         <button type="submit" className="form-btn" disabled={loading}>

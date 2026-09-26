@@ -2,27 +2,30 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "../lib/supabase/server-client";
+// Or your standard server Supabase client
 
-/**
- * 1. Fetch single switch with its joined contacts & payloads
- */
-export async function getSwitchById(swid) {
+
+
+export async function getSwitchById(switchId) {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) return { error: "Unauthorized", data: null };
-
-  const { data, error } = await supabase
+  const { data: sw, error } = await supabase
     .from("switches")
     .select(`
-      *,
+      id,
+      usr_id,
+      name,
+      criticality,
+      purpose,
+      last_check_in,
+      check_in_interval,
+      actions,
+      created_at,
       switch_contacts (
         id,
-        contact_id,
         priority_score,
         trust_score,
+        contact_id,
         contacts (
           id,
           contact_name,
@@ -33,23 +36,44 @@ export async function getSwitchById(swid) {
         id,
         content,
         trust_required,
-        target_contact_id,
-        target_contact:contacts!target_contact_id (
-          id,
-          contact_name,
-          email
-        )
+        target_contact_id
       )
     `)
-    .eq("id", swid)
-    .eq("usr_id", user.id)
+    .eq("id", switchId)
     .single();
 
-  if (error) {
-    return { error: error.message, data: null };
+  if (error || !sw) {
+    console.error("[getSwitchById] Fetch error:", error);
+    return null;
   }
 
-  return { data, error: null };
+  // Normalize check_in_interval so the form never receives undefined fields
+  const normalizedInterval = {
+    months: sw.check_in_interval?.months ?? 0,
+    days: sw.check_in_interval?.days ?? 0,
+    hours: sw.check_in_interval?.hours ?? 0,
+    minutes: sw.check_in_interval?.minutes ?? 0,
+  };
+
+  // Normalize actions to ensure the modules schema is always populated
+  const normalizedActions = {
+    email: sw.actions?.email ?? true,
+    modules: {
+      beacon: sw.actions?.modules?.beacon ?? true,
+      data_release: sw.actions?.modules?.data_release ?? false,
+      purge: sw.actions?.modules?.purge ?? false,
+      lockdown: sw.actions?.modules?.lockdown ?? false,
+      ...sw.actions?.modules,
+    },
+  };
+
+  return {
+    ...sw,
+    check_in_interval: normalizedInterval,
+    actions: normalizedActions,
+    criticality: sw.criticality || "OPERATIONAL",
+    purpose: sw.purpose || "PERSONAL",
+  };
 }
 
 /**
@@ -173,120 +197,62 @@ export async function createSwitch(payload) {
 /**
  * 3. Update Switch: Updates parent and cleanly replaces children
  */
-export async function updateSwitch(swId, payload) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) return { error: "Unauthorized" };
+export async function updateSwitch(switchId, updatePayload) {
+  const supabase = await createClient();
 
-  const formattedActions = {
-    modules: payload.action_modules || {
-      beacon: true,
-      data_release: false,
-      purge: false,
-      lockdown: false,
-    },
-    data_releases: payload.data_releases || [],
-    purge_config: payload.purge_config || null,
-    lockdown_config: payload.lockdown_config || null,
-    call: Boolean(payload.actions?.call),
-    email: Boolean(payload.actions?.email ?? true),
-    forwardData: Boolean(payload.actions?.forwardData),
+  // 1. Fetch current switch to merge complex JSON fields safely
+  const { data: existing, error: fetchErr } = await supabase
+    .from("switches")
+    .select("actions, check_in_interval")
+    .eq("id", switchId)
+    .single();
+
+  if (fetchErr || !existing) {
+    throw new Error("Target switch not found or access denied.");
+  }
+
+  // 2. Prepare merged check_in_interval
+  const sanitizedInterval = {
+    months: Number(updatePayload.check_in_interval?.months ?? existing.check_in_interval?.months ?? 0),
+    days: Number(updatePayload.check_in_interval?.days ?? existing.check_in_interval?.days ?? 0),
+    hours: Number(updatePayload.check_in_interval?.hours ?? existing.check_in_interval?.hours ?? 0),
+    minutes: Number(updatePayload.check_in_interval?.minutes ?? existing.check_in_interval?.minutes ?? 0),
   };
 
-  // Step A: Update master switch parameters
-  const { error: switchError } = await supabase
+  // 3. Prepare merged actions JSON
+  const mergedActions = {
+    ...existing.actions,
+    ...updatePayload.actions,
+    modules: {
+      ...(existing.actions?.modules || {}),
+      ...(updatePayload.actions?.modules || {}),
+    },
+  };
+
+  // 4. Construct update object (explicitly omitting last_check_in and usr_id)
+  const updateFields = {
+    name: updatePayload.name?.trim(),
+    criticality: updatePayload.criticality || "OPERATIONAL",
+    purpose: updatePayload.purpose?.trim() || "PERSONAL",
+    check_in_interval: sanitizedInterval,
+    actions: mergedActions,
+  };
+
+  const { data: updatedSwitch, error: updateErr } = await supabase
     .from("switches")
-    .update({
-      name: payload.name,
-      description: payload.description || null,
-      purpose: payload.purpose || "PERSONAL",
-      criticality: payload.criticality || "OPERATIONAL",
-      check_in_interval: {
-        months: Number(payload.check_in_interval?.months || 0),
-        days: Number(payload.check_in_interval?.days || 0),
-        hours: Number(payload.check_in_interval?.hours || 0),
-        minutes: Number(payload.check_in_interval?.minutes || 0),
-      },
-      actions: formattedActions,
-    })
-    .eq("id", swId)
-    .eq("usr_id", user.id);
+    .update(updateFields)
+    .eq("id", switchId)
+    .select()
+    .single();
 
-  if (switchError) {
-    console.error("[Supabase Error] Updating Switch:", switchError);
-    return { error: switchError.message };
+  if (updateErr) {
+    console.error("[updateSwitch] DB Error:", updateErr);
+    throw new Error(updateErr.message);
   }
 
-  // Step B: Replace switch_contacts
-  await supabase.from("switch_contacts").delete().eq("switch_id", swId);
-
-  const contactRows = (payload.contacts || []).filter(
-    (c) => c.selected !== false && c.contact_id
-  );
-
-  if (contactRows.length > 0) {
-    const parsedContacts = contactRows.map((c) => ({
-      switch_id: swId,
-      contact_id: c.contact_id,
-      priority_score: Number(c.priority_score ?? 1),
-      trust_score: Number(c.trust_score ?? 1),
-    }));
-
-    const { error: contactsError } = await supabase
-      .from("switch_contacts")
-      .insert(parsedContacts);
-
-    if (contactsError) {
-      console.error("[Supabase Error] Updating Switch Contacts:", contactsError);
-      return { error: contactsError.message };
-    }
-  }
-
-  // Step C: Replace info_to_release
-  await supabase.from("info_to_release").delete().eq("switch_id", swId);
-
-  const beaconEnabled = payload.action_modules?.beacon ?? true;
-  const rawBeaconRows = beaconEnabled
-    ? payload.beacon_rows || payload.info_to_release || payload.info_rows || []
-    : [];
-
-  const validInfoRows = rawBeaconRows.filter((r) => {
-    const text = r.content ?? r.value ?? "";
-    return typeof text === "string" && text.trim() !== "";
-  });
-
-  if (validInfoRows.length > 0) {
-    const parsedPayloads = validInfoRows.map((r) => {
-      const trustRequired = Number(r.trust_required ?? r.minTrust ?? 50);
-      const targetContact = r.target_contact_id ?? r.exceptionContactID ?? null;
-
-      return {
-        switch_id: swId,
-        content: (r.content ?? r.value).trim(),
-        trust_required: trustRequired,
-        target_contact_id: trustRequired === -1 && targetContact ? targetContact : null,
-      };
-    });
-
-    const { error: infoError } = await supabase
-      .from("info_to_release")
-      .insert(parsedPayloads);
-
-    if (infoError) {
-      console.error("[Supabase Error] Updating info_to_release:", infoError);
-      return { error: infoError.message };
-    }
-  }
-
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/switches");
-  revalidatePath(`/dashboard/switches/${swId}`);
-  return { success: true };
+  return updatedSwitch;
 }
-
 /**
  * 4. Remove Switch
  */
