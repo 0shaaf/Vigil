@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import crypto from "crypto";
-import { processSwitchEscalation } from "@/app/lib/escalation";
+import { processSwitchEscalation } from "@/app/lib/escalations";
 
 export const dynamic = "force-dynamic";
 
