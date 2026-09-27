@@ -63,7 +63,7 @@ export async function GET(request, { params }) {
     );
   }
 
-  // 4. Mark contact as 'acked'
+  // 4. Mark this contact as 'acked'
   const { error: updateScErr } = await supabase
     .from("switch_contacts")
     .update({
@@ -79,13 +79,20 @@ export async function GET(request, { params }) {
     });
   }
 
-  // 5. Mark parent switch as RESOLVED so cron ignores it completely
+  // 5. Reset all other 'pending' contacts of this switch back to NULL
+  await supabase
+    .from("switch_contacts")
+    .update({ status: null })
+    .eq("switch_id", sc.switch_id)
+    .eq("status", "pending");
+
+  // 6. Mark parent switch as RESOLVED so cron ignores it completely
   await supabase
     .from("switches")
     .update({ status: "RESOLVED" })
     .eq("id", sc.switch_id);
 
-  // 6. Log acknowledgment event
+  // 7. Log acknowledgment event
   await supabase.from("escalation_logs").insert({
     usr_id: sc.switches?.usr_id,
     switch_id: sc.switch_id,
@@ -93,7 +100,7 @@ export async function GET(request, { params }) {
     channel: "EMAIL_ACK",
     recipient_email: sc.contacts?.email,
     status: "SUCCESS",
-    details: `Incident acknowledged by ${sc.contacts?.contact_name || sc.contacts?.email}. Switch transitioned to RESOLVED. Escalation terminated.`,
+    details: `Incident acknowledged by ${sc.contacts?.contact_name || sc.contacts?.email}. Switch transitioned to RESOLVED. Uncontacted recipients reverted to null.`,
     execution_metadata: { ack_token: token },
   });
 

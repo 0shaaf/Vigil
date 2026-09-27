@@ -128,11 +128,24 @@ export async function processSwitchEscalation(supabase, sw) {
 
     const ackToken = crypto.randomUUID();
 
-    // Match payloads: trust_required <= contact trust_score OR direct target match
+    // Match payloads:
+    // Mode 1: Targeted Exception (-1 or target_contact_id present) -> ONLY the designated recipient
+    // Mode 2: Tiered Clearance (trust_required >= 0 and no designated contact) -> Clearance rating check
+    
     const authorizedPayloads = (payloads || []).filter((p) => {
-      const meetsTrust = (p.trust_required ?? 0) <= (target.trust_score ?? 0) && (p.trust_required ?? 0 != "-1");
-      const isDirectTarget = p.target_contact_id === target.contact_id;
-      return meetsTrust || isDirectTarget;
+      const isException = Number(p.trust_required) === -1 || Boolean(p.target_contact_id);
+
+      if (isException) {
+        return (
+          Boolean(p.target_contact_id) &&
+          String(p.target_contact_id) === String(target.contact_id || target.contacts?.id)
+        );
+      }
+
+      // Tiered clearance broadcast
+      const trustReq = Number(p.trust_required);
+      const contactTrust = Number(target.trust_score ?? 0);
+      return trustReq >= 0 && contactTrust >= trustReq;
     });
 
     const ackUrl = `${baseUrl}/api/ack/${ackToken}`;
