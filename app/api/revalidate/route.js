@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import crypto from "crypto";
+import { processSwitchEscalation } from "@/app/lib/escalation";
+
+export const dynamic = "force-dynamic";
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Helper: Calculate exact deadline from interval JSON including minutes
+// Helper: Calculate exact deadline timestamp from interval JSON
 function getSwitchDeadline(lastCheckIn, interval) {
   const deadline = new Date(lastCheckIn);
   if (interval?.months) deadline.setMonth(deadline.getMonth() + Number(interval.months));
@@ -28,12 +32,13 @@ function formatRemainingDuration(ms) {
 }
 
 export async function GET(request) {
-  // 1. Guard route with Bearer or custom header
+  // 1. Guard route with Bearer or custom header (allows dev access if CRON_SECRET is not set)
   const authHeader = request.headers.get("authorization");
   const cronSecret = request.headers.get("x-cron-secret");
   const expectedSecret = process.env.CRON_SECRET;
 
   const isAuthorized =
+    !expectedSecret ||
     cronSecret === expectedSecret ||
     authHeader === `Bearer ${expectedSecret}`;
 
@@ -48,8 +53,18 @@ export async function GET(request) {
     { auth: { persistSession: false } }
   );
 
-  // 3. Fetch all active switches with relational contacts and disclosures
-  const { data: switches, error: fetchErr } = await supabaseAdmin
+  const now = Date.now();
+  const summary = {
+    armedEvaluated: 0,
+    warningsSent: 0,
+    newlyTripped: 0,
+    escalatingEvaluated: 0,
+  };
+
+  // =============================================================
+  // PHASE 1: Countdown Evaluation for ARMED Switches
+  // =============================================================
+  const { data: armedSwitches, error: armedErr } = await supabaseAdmin
     .from("switches")
     .select(`
       id,
@@ -57,70 +72,38 @@ export async function GET(request) {
       name,
       criticality,
       purpose,
+      status,
       last_check_in,
       check_in_interval,
-      actions,
-      switch_contacts (
-        priority_score,
-        trust_score,
-        contacts (
-          id,
-          contact_name,
-          email
-        )
-      ),
-      info_to_release (
-        id,
-        content,
-        trust_required,
-        target_contact_id,
-        contacts:target_contact_id (
-          id,
-          contact_name,
-          email
-        )
-      )
-    `);
+      actions
+    `)
+    .eq("status", "ARMED");
 
-  if (fetchErr) {
-    console.error("[Cron Evaluator] DB query error:", fetchErr);
-    return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+  if (armedErr) {
+    console.error("[Cron Evaluator] Query error (ARMED switches):", armedErr);
+    return NextResponse.json({ error: armedErr.message }, { status: 500 });
   }
 
-  const now = Date.now();
-  const summary = {
-    evaluated: switches.length,
-    warningsSent: 0,
-    triggered: 0,
-    dispatchesRecorded: 0,
-  };
+  summary.armedEvaluated = armedSwitches?.length || 0;
 
-  // 4. Evaluate each switch
-  for (const sw of switches) {
+  for (const sw of armedSwitches || []) {
     if (!sw.last_check_in) continue;
 
     const startMs = new Date(sw.last_check_in).getTime();
     const deadline = getSwitchDeadline(sw.last_check_in, sw.check_in_interval);
-
-    // Total lifespan of this pulse cycle in milliseconds
     const totalIntervalMs = Math.max(deadline.getTime() - startMs, 0);
     const timeLeftMs = deadline.getTime() - now;
+    const remainingText = formatRemainingDuration(timeLeftMs);
 
     // Dynamic warning window: 25% of total interval
     const warningThresholdMs = totalIntervalMs * 0.25;
-    const remainingText = formatRemainingDuration(timeLeftMs);
 
-    console.log(
-      `[Eval] Switch "${sw.name}" | Remaining: ${remainingText} | Warning Threshold: ${formatRemainingDuration(warningThresholdMs)}`
-    );
-
-    // ==========================================
-    // CASE A: Switch has NOT tripped yet
-    // ==========================================
+    // -----------------------------------------------------------
+    // CASE A: Switch is still active (timeLeftMs > 0)
+    // -----------------------------------------------------------
     if (timeLeftMs > 0) {
-      // Check if switch has entered its 25% warning window
       if (timeLeftMs <= warningThresholdMs) {
-        // Anti-spam guard: limit(1) prevents PostgREST multiple-row exception loops
+        // Anti-spam guard: limit(1) prevents multiple warnings per pulse cycle
         const { data: existingWarnings } = await supabaseAdmin
           .from("escalation_logs")
           .select("id")
@@ -130,42 +113,30 @@ export async function GET(request) {
           .limit(1);
 
         if (existingWarnings && existingWarnings.length > 0) {
-          console.log(`[Eval] 25% warning already logged for "${sw.name}". Skipping.`);
           continue;
         }
 
         // Fetch owner email from Supabase Auth
         const { data: userData } = await supabaseAdmin.auth.admin.getUserById(sw.usr_id);
-        const operatorEmail = userData?.user?.email;
+        const recipientEmail = userData?.user?.email;
 
-        // Fallback for Resend sandbox mode if operator email is not yet verified
-        const recipientEmail = operatorEmail || "randomuserebay@gmail.com";
+        // Generate one-click signed verification token
+        const checkinToken = crypto.randomBytes(32).toString("hex");
+
+        await supabaseAdmin.from("checkin_tokens").insert({
+          switch_id: sw.id,
+          token: checkinToken,
+          expires_at: deadline.toISOString(),
+        });
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const pulseActionUrl = `${appUrl}/checkin?token=${checkinToken}`;
 
         let warningStatus = "SUCCESS";
         let warningDetails = `Switch [${sw.name}] entered final 25% window (${remainingText} remaining).`;
 
-       // 1. Generate a cryptographic 256-bit token
-        const checkinToken = crypto.randomBytes(32).toString("hex");
-
-        // 2. Persist token bound to this switch, expiring at the exact switch deadline
-        const { error: tokenErr } = await supabaseAdmin
-          .from("checkin_tokens")
-          .insert({
-            switch_id: sw.id,
-            token: checkinToken,
-            expires_at: deadline.toISOString(),
-          });
-
-        if (tokenErr) {
-          console.error("❌ Failed to create checkin token:", tokenErr);
-        }
-
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://vigil-pi-fawn.vercel.app";
-        const pulseActionUrl = `${appUrl}/checkin?token=${checkinToken}`;
-
-        // 3. Dispatch Warning with One-Click Link
         if (recipientEmail) {
-          const { data: resendData, error: resendError } = await resend.emails.send({
+          const { error: resendError } = await resend.emails.send({
             from: "Vigil System <onboarding@resend.dev>",
             to: recipientEmail,
             subject: `[ACTION REQUIRED] Vigil Heartbeat Warning: ${sw.name}`,
@@ -209,19 +180,15 @@ export async function GET(request) {
             `,
           });
 
-        
-
           if (resendError) {
-            console.error("❌ Resend Warning API Error:", resendError);
+            console.error("[Cron Warning] Resend Error:", resendError);
             warningStatus = "FAILED";
             warningDetails = `Warning delivery failed: ${resendError.message}`;
           } else {
-            console.log("✅ Resend Warning Dispatched ID:", resendData?.id);
             summary.warningsSent += 1;
           }
         }
 
-        // Record warning telemetry
         await supabaseAdmin.from("escalation_logs").insert({
           usr_id: sw.usr_id,
           switch_id: sw.id,
@@ -232,29 +199,20 @@ export async function GET(request) {
           status: warningStatus,
           details: warningDetails,
         });
-
-
       }
       continue;
     }
 
-    // ==========================================
+    // -----------------------------------------------------------
     // CASE B: Switch HAS TRIPPED (timeLeftMs <= 0)
-    // ==========================================
-    summary.triggered += 1;
+    // -----------------------------------------------------------
+    summary.newlyTripped += 1;
 
-    // Check if trip was already fired during this cycle
-    const { data: existingTriggers } = await supabaseAdmin
-      .from("escalation_logs")
-      .select("id")
-      .eq("switch_id", sw.id)
-      .eq("event_type", "TRIGGER_FIRED")
-      .gt("created_at", sw.last_check_in)
-      .limit(1);
-
-    if (existingTriggers && existingTriggers.length > 0) {
-      continue;
-    }
+    // Transition switch to ESCALATING status
+    await supabaseAdmin
+      .from("switches")
+      .update({ status: "ESCALATING" })
+      .eq("id", sw.id);
 
     // Primary trip telemetry
     await supabaseAdmin.from("escalation_logs").insert({
@@ -264,100 +222,39 @@ export async function GET(request) {
       channel: "SYSTEM",
       trust_tier: null,
       status: "SUCCESS",
-      details: `Switch [${sw.name}] timer expired. Autonomous actions executing.`,
+      details: `Countdown reached 0. Switch ${sw.name} transitioned to ESCALATING. Initializing priority waterfall.`,
     });
 
-    const isEmailChannelActive = sw.actions?.modules
-      ? Boolean(sw.actions.modules.beacon)
-      : Boolean(sw.actions?.email ?? true);
+    // Fire top-priority tier batch dispatch
+    await processSwitchEscalation(supabaseAdmin, { ...sw, status: "ESCALATING" });
+  }
 
-    const disclosures = sw.info_to_release || [];
-    const linkedContacts = sw.switch_contacts || [];
+  // =============================================================
+  // PHASE 2: Waterfall Timeout & Cascade for ESCALATING Switches
+  // =============================================================
+  const { data: escalatingSwitches, error: escErr } = await supabaseAdmin
+    .from("switches")
+    .select(`
+      id,
+      usr_id,
+      name,
+      criticality,
+      purpose,
+      status,
+      last_check_in,
+      check_in_interval,
+      actions
+    `)
+    .eq("status", "ESCALATING");
 
-    // Execute Clearance Engine for disclosures
-    for (const info of disclosures) {
-      // RULE 1: Designated Sole Recipient (-1)
-      if (info.trust_required === -1) {
-        const target = info.contacts;
-        if (target?.email && isEmailChannelActive) {
-          const { data: resendData, error: resendError } = await resend.emails.send({
-            from: "Vigil System <onboarding@resend.dev>",
-            to: target.email,
-            subject: `[DISCLOSURE] Fail-Safe Activated: ${sw.name}`,
-            html: `
-              <h2>Vigil Fail-Safe Protocol Executed</h2>
-              <p>You have been designated as the sole recipient for confidential instructions from switch <strong>${sw.name}</strong>.</p>
-              <hr />
-              <p><strong>Payload:</strong></p>
-              <pre style="background: #111; color: #eee; padding: 15px; border-radius: 6px;">${info.content}</pre>
-            `,
-          });
+  if (!escErr && escalatingSwitches) {
+    summary.escalatingEvaluated = escalatingSwitches.length;
 
-          await supabaseAdmin.from("escalation_logs").insert({
-            usr_id: sw.usr_id,
-            switch_id: sw.id,
-            event_type: "PAYLOAD_DISPATCHED",
-            channel: "EMAIL",
-            recipient_email: target.email,
-            trust_tier: -1,
-            status: resendError ? "FAILED" : "SUCCESS",
-            details: resendError
-              ? `Delivery failed: ${resendError.message}`
-              : `Delivered targeted exception payload directly to ${target.contact_name}.`,
-          });
-          summary.dispatchesRecorded += 1;
-        }
-      }
-      // RULE 2: Tiered Trust Broadcast (>= 25, 50, 75)
-      else {
-        const eligibleContacts = linkedContacts
-          .filter((sc) => sc.trust_score >= info.trust_required && sc.contacts?.email)
-          .sort((a, b) => b.priority_score - a.priority_score);
-
-        for (const sc of eligibleContacts) {
-          let emailStatus = "SUCCESS";
-          let emailError = null;
-
-          if (isEmailChannelActive) {
-            const { error: resendError } = await resend.emails.send({
-              from: "Vigil System <onboarding@resend.dev>",
-              to: sc.contacts.email,
-              subject: `[ALERT] Fail-Safe Disclosure Tier ${info.trust_required}: ${sw.name}`,
-              html: `
-                <h2>Vigil Fail-Safe Protocol Executed</h2>
-                <p>Dear ${sc.contacts.contact_name},</p>
-                <p>You are receiving this automated transmission because switch <strong>${sw.name}</strong> has tripped, and your clearance rating (${sc.trust_score}) meets Tier ${info.trust_required}.</p>
-                <hr />
-                <p><strong>Decrypted Payload:</strong></p>
-                <pre style="background: #111; color: #eee; padding: 15px; border-radius: 6px;">${info.content}</pre>
-              `,
-            });
-
-            if (resendError) {
-              emailStatus = "FAILED";
-              emailError = resendError.message;
-            }
-          }
-
-          await supabaseAdmin.from("escalation_logs").insert({
-            usr_id: sw.usr_id,
-            switch_id: sw.id,
-            event_type: "PAYLOAD_DISPATCHED",
-            channel: isEmailChannelActive ? "EMAIL" : "INTERNAL",
-            recipient_email: sc.contacts.email,
-            trust_tier: info.trust_required,
-            status: emailStatus,
-            details: emailError
-              ? `Delivery failed: ${emailError}`
-              : `Delivered Tier ${info.trust_required} payload to ${sc.contacts.contact_name}.`,
-          });
-          summary.dispatchesRecorded += 1;
-        }
-      }
+    for (const sw of escalatingSwitches) {
+      await processSwitchEscalation(supabaseAdmin, sw);
     }
   }
 
-  // 5. Autonomic summary return outside the evaluation loop
   return NextResponse.json({
     success: true,
     timestamp: new Date().toISOString(),

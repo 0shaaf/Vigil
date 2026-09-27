@@ -25,13 +25,13 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
       purpose: "PERSONAL",
       criticality: "OPERATIONAL",
       check_in_interval: { months: 0, days: 30, hours: 0, minutes: 0 },
-      
+
       // Enabled Action Modules
       action_modules: {
-        beacon: true,      // Reach Out / Clearance-based briefings
+        beacon: true, // Reach Out / Clearance-based briefings
         data_release: false, // File & payload downloads
-        purge: false,       // Cloud data wiping
-        lockdown: false,    // Key revocation & kill-switch webhooks
+        purge: false, // Cloud data wiping
+        lockdown: false, // Key revocation & kill-switch webhooks
       },
 
       // Contact clearances
@@ -42,7 +42,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
         trust_score: 50,
       })),
 
-      // ACTION 1: Full Compartmentalized Reach Out / Beacon Engine (Preserved)
+      // ACTION 1: Full Compartmentalized Reach Out / Beacon Engine
       beacon_rows: [
         {
           content: "",
@@ -103,12 +103,79 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
   const onSubmit = async (formData) => {
     setSubmitting(true);
     setServerError("");
-    const res = await createSwitch(formData);
-    if (res?.error) {
-      setServerError(res.error);
+
+    try {
+      // 1. Filter only selected contacts and cast scores to integers
+      const selectedContacts = (formData.contacts || [])
+        .filter((c) => c.selected)
+        .map((c) => ({
+          contact_id: c.contact_id,
+          priority_score: Number(c.priority_score) || 1,
+          trust_score: Number(c.trust_score) || 0,
+        }));
+
+      // 2. Sanitize countdown interval units to numbers
+      const sanitizedInterval = {
+        months: Number(formData.check_in_interval?.months || 0),
+        days: Number(formData.check_in_interval?.days || 0),
+        hours: Number(formData.check_in_interval?.hours || 0),
+        minutes: Number(formData.check_in_interval?.minutes || 0),
+      };
+
+      // 3. Format action modules and their individual configurations
+      const sanitizedActions = {
+        email: true,
+        modules: {
+          beacon: Boolean(formData.action_modules?.beacon),
+          data_release: Boolean(formData.action_modules?.data_release),
+          purge: Boolean(formData.action_modules?.purge),
+          lockdown: Boolean(formData.action_modules?.lockdown),
+        },
+        data_releases: formData.action_modules?.data_release
+          ? (formData.data_releases || []).filter((r) => r.title || r.download_url)
+          : [],
+        purge_config: formData.action_modules?.purge ? formData.purge_config : null,
+        lockdown_config: formData.action_modules?.lockdown ? formData.lockdown_config : null,
+      };
+
+      // 4. Sanitize beacon disclosure rows (convert empty UUID strings to null)
+      const sanitizedBeaconRows = formData.action_modules?.beacon
+        ? (formData.beacon_rows || [])
+            .filter((row) => row.content?.trim())
+            .map((row) => {
+              const trustVal = Number(row.trust_required);
+              return {
+                content: row.content.trim(),
+                trust_required: trustVal,
+                target_contact_id: trustVal === -1 && row.target_contact_id ? row.target_contact_id : null,
+              };
+            })
+        : [];
+
+      // 5. Build normalized payload
+      const payload = {
+        name: formData.name?.trim(),
+        description: formData.description?.trim() || null,
+        purpose: formData.purpose || "PERSONAL",
+        criticality: formData.criticality || "OPERATIONAL",
+        check_in_interval: sanitizedInterval,
+        actions: sanitizedActions,
+        contacts: selectedContacts,
+        beacon_rows: sanitizedBeaconRows,
+      };
+
+      const res = await createSwitch(payload);
+
+      if (res?.error) {
+        setServerError(res.error);
+        setSubmitting(false);
+      } else if (res?.id) {
+        router.push(`/dashboard/switches/${res.id}`);
+      }
+    } catch (err) {
+      console.error("[CreateSwitchForm] Submit Error:", err);
+      setServerError(err.message || "Failed to arm switch. Please try again.");
       setSubmitting(false);
-    } else {
-      router.push(`/dashboard/switches/${res.id}`);
     }
   };
 
@@ -279,7 +346,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
         </div>
       </section>
 
-      {/* MODULE 1: COMPARTMENTALIZED EMERGENCY BEACON (PRESERVED FULL STRUCTURE) */}
+      {/* MODULE 1: COMPARTMENTALIZED EMERGENCY BEACON */}
       {activeModules.beacon && (
         <section className="form-section">
           <div className="section-legend-bar">
