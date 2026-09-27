@@ -130,7 +130,7 @@ export async function processSwitchEscalation(supabase, sw) {
 
     // Match payloads: trust_required <= contact trust_score OR direct target match
     const authorizedPayloads = (payloads || []).filter((p) => {
-      const meetsTrust = (p.trust_required ?? 0) <= (target.trust_score ?? 0);
+      const meetsTrust = (p.trust_required ?? 0) <= (target.trust_score ?? 0) && (p.trust_required ?? 0 != "-1");
       const isDirectTarget = p.target_contact_id === target.contact_id;
       return meetsTrust || isDirectTarget;
     });
