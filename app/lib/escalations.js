@@ -131,7 +131,7 @@ export async function processSwitchEscalation(supabase, sw) {
     // Match payloads:
     // Mode 1: Targeted Exception (-1 or target_contact_id present) -> ONLY the designated recipient
     // Mode 2: Tiered Clearance (trust_required >= 0 and no designated contact) -> Clearance rating check
-    
+
     const authorizedPayloads = (payloads || []).filter((p) => {
       const isException = Number(p.trust_required) === -1 || Boolean(p.target_contact_id);
 
@@ -150,18 +150,43 @@ export async function processSwitchEscalation(supabase, sw) {
 
     const ackUrl = `${baseUrl}/api/ack/${ackToken}`;
 
+    // Inside the contact iteration loop in escalations.js:
+    const accessToken = await getValidGoogleAccessToken(supabaseAdmin, sw.usr_id);
+
+    for (const info of authorizedPayloads) {
+      const files = info.file_metadata || [];
+
+      // If this disclosure has attached files, unlock them for the contact's email
+      if (files.length > 0 && accessToken) {
+        for (const file of files) {
+          await grantDriveFileAccess(accessToken, file.id, target.contacts.email);
+        }
+      }
+    }
+
     const payloadHtml =
       authorizedPayloads.length > 0
         ? authorizedPayloads
-            .map(
-              (p, idx) => `
+          .map(
+            (p, idx) => `
               <div style="background:#111622; border:1px solid #1e293b; border-radius:6px; padding:12px; margin-bottom:10px;">
                 <p style="color:#94a3b8; font-size:11px; margin:0 0 6px 0; text-transform:uppercase;">Disclosure #${idx + 1}</p>
                 <div style="color:#f1f5f9; font-family:monospace; font-size:13px; white-space:pre-wrap;">${p.content}</div>
               </div>`
-            )
-            .join("")
-        : `<p style="color:#64748b; font-style:italic;">No secret disclosures designated for your security clearance tier.</p>`;
+          )
+          .join("")
+        : `<p style="color:#64748b; font-style:italic;">No secret disclosures designated for your security clearance tier.</p>
+        ${info.file_metadata?.length > 0 ? `
+           <div style="margin-top: 12px; padding: 12px; background: #161b26; border: 1px solid #1e293b; border-radius: 6px;">
+          <div style="font-size: 11px; text-transform: uppercase; color: #38bdf8; font-weight: 700; margin-bottom: 8px;">Attached Drive Assets</div>
+          ${info.file_metadata.map(f => `
+           <div style="margin-bottom: 6px;">
+        📄 <a href="${f.webViewLink}" target="_blank" style="color: #60a5fa; text-decoration: underline; font-size: 13px;">${f.name}</a>
+           </div>
+          `).join("")}
+           </div>
+            ` : ""}
+        `;
 
     try {
       await resend.emails.send({

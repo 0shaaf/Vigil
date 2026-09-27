@@ -5,6 +5,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createSwitch } from "@/app/actions/switches";
+import GoogleDrivePickerModal from "@/app/compontents/GoogleDrivePickerModal";
 import "../css/switch-form.css";
 
 export default function CreateSwitchForm({ availableContacts = [] }) {
@@ -12,11 +13,16 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
 
+  // Drive Modal State
+  const [activeDriveRowIndex, setActiveDriveRowIndex] = useState(null);
+  const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
+
   const {
     register,
     control,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -28,7 +34,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
 
       // Enabled Action Modules
       action_modules: {
-        beacon: true, // Reach Out / Clearance-based briefings
+        beacon: true, // Reach Out / Clearance-based briefings & file disclosures
         data_release: false, // File & payload downloads
         purge: false, // Cloud data wiping
         lockdown: false, // Key revocation & kill-switch webhooks
@@ -48,6 +54,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
           content: "",
           trust_required: 50,
           target_contact_id: "",
+          file_metadata: [],
         },
       ],
 
@@ -78,7 +85,6 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
     },
   });
 
-  // Dynamic Array for Action 1: Reach Out / Beacon Disclosures
   const {
     fields: beaconFields,
     append: appendBeacon,
@@ -88,7 +94,6 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
     name: "beacon_rows",
   });
 
-  // Dynamic Array for Action 2: Data Releases
   const {
     fields: releaseFields,
     append: appendRelease,
@@ -100,12 +105,33 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
 
   const activeModules = watch("action_modules");
 
+  const openDrivePicker = (idx) => {
+    setActiveDriveRowIndex(idx);
+    setIsDriveModalOpen(true);
+  };
+
+  const handleDriveFilesConfirmed = (selectedFiles) => {
+    if (activeDriveRowIndex !== null) {
+      setValue(`beacon_rows.${activeDriveRowIndex}.file_metadata`, selectedFiles, {
+        shouldDirty: true,
+      });
+    }
+  };
+
+  const removeDriveFile = (rowIndex, fileId) => {
+    const currentFiles = watch(`beacon_rows.${rowIndex}.file_metadata`) || [];
+    const updated = currentFiles.filter((f) => f.id !== fileId);
+    setValue(`beacon_rows.${rowIndex}.file_metadata`, updated, {
+      shouldDirty: true,
+    });
+  };
+
   const onSubmit = async (formData) => {
     setSubmitting(true);
     setServerError("");
 
     try {
-      // 1. Filter only selected contacts and cast scores to integers
+      // 1. Filter selected contacts and parse scores
       const selectedContacts = (formData.contacts || [])
         .filter((c) => c.selected)
         .map((c) => ({
@@ -114,7 +140,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
           trust_score: Number(c.trust_score) || 0,
         }));
 
-      // 2. Sanitize countdown interval units to numbers
+      // 2. Sanitize countdown interval units
       const sanitizedInterval = {
         months: Number(formData.check_in_interval?.months || 0),
         days: Number(formData.check_in_interval?.days || 0),
@@ -122,7 +148,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
         minutes: Number(formData.check_in_interval?.minutes || 0),
       };
 
-      // 3. Format action modules and their individual configurations
+      // 3. Format action modules
       const sanitizedActions = {
         email: true,
         modules: {
@@ -138,16 +164,22 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
         lockdown_config: formData.action_modules?.lockdown ? formData.lockdown_config : null,
       };
 
-      // 4. Sanitize beacon disclosure rows (convert empty UUID strings to null)
+      // 4. Sanitize beacon disclosures (accepts text, files, or both)
       const sanitizedBeaconRows = formData.action_modules?.beacon
         ? (formData.beacon_rows || [])
-            .filter((row) => row.content?.trim())
+            .filter(
+              (row) =>
+                row.content?.trim() ||
+                (Array.isArray(row.file_metadata) && row.file_metadata.length > 0)
+            )
             .map((row) => {
               const trustVal = Number(row.trust_required);
               return {
-                content: row.content.trim(),
+                content: row.content?.trim() || "",
                 trust_required: trustVal,
-                target_contact_id: trustVal === -1 && row.target_contact_id ? row.target_contact_id : null,
+                target_contact_id:
+                  trustVal === -1 && row.target_contact_id ? row.target_contact_id : null,
+                file_metadata: Array.isArray(row.file_metadata) ? row.file_metadata : [],
               };
             })
         : [];
@@ -229,7 +261,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
         </div>
       </section>
 
-      {/* 2. Check-In Interval with Minutes */}
+      {/* 2. Check-In Interval */}
       <section className="form-section">
         <span className="section-legend">Trip Interval</span>
         <div className="interval-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
@@ -313,20 +345,20 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
       {/* 4. Action Modules Selector */}
       <section className="form-section">
         <span className="section-legend">Escalation Action Modules</span>
-        <p className="field-hint">Enable the autonomous actions to trigger when this switch trips.</p>
+        <p className="field-hint">Enable autonomous actions to trigger when this switch trips.</p>
         <div className="actions-checkbox-group">
           <label className="checkbox-card">
             <input type="checkbox" {...register("action_modules.beacon")} />
             <div className="checkbox-meta">
-              <span className="checkbox-title">🚨 Emergency Beacon / Reach Out</span>
-              <span className="checkbox-desc">Graduated briefings & disclosures routed via Trust scores.</span>
+              <span className="checkbox-title">🚨 Emergency Beacon / Disclosures</span>
+              <span className="checkbox-desc">Graduated briefings & Drive files routed via clearance or sole recipient.</span>
             </div>
           </label>
           <label className="checkbox-card">
             <input type="checkbox" {...register("action_modules.data_release")} />
             <div className="checkbox-meta">
               <span className="checkbox-title">📦 Data Release Packages</span>
-              <span className="checkbox-desc">Transmit file archives and encrypted download links.</span>
+              <span className="checkbox-desc">Transmit external archives and encrypted vault links.</span>
             </div>
           </label>
           <label className="checkbox-card">
@@ -346,35 +378,41 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
         </div>
       </section>
 
-      {/* MODULE 1: COMPARTMENTALIZED EMERGENCY BEACON */}
+      {/* MODULE 1: COMPARTMENTALIZED BRIEFINGS & DRIVE RELEASES */}
       {activeModules.beacon && (
         <section className="form-section">
           <div className="section-legend-bar">
             <div>
-              <span className="section-legend">Emergency Beacon: Compartmentalized Briefings</span>
+              <span className="section-legend">Emergency Disclosures & File Releases</span>
               <p className="field-hint" style={{ marginTop: "4px" }}>
-                Multi-tier intelligence routing. Deliver specific instructions to exceptions or clearance tiers.
+                Deliver confidential messages and Google Drive assets to designated contacts or clearance tiers.
               </p>
             </div>
             <button
               type="button"
               className="btn-add-row"
               onClick={() =>
-                appendBeacon({ content: "", trust_required: 50, target_contact_id: "" })
+                appendBeacon({
+                  content: "",
+                  trust_required: 50,
+                  target_contact_id: "",
+                  file_metadata: [],
+                })
               }
             >
-              + Add Briefing Row
+              + Add Disclosure Row
             </button>
           </div>
 
           <div className="payloads-stack">
             {beaconFields.map((field, idx) => {
               const trustValue = Number(watch(`beacon_rows.${idx}.trust_required`));
+              const attachedFiles = watch(`beacon_rows.${idx}.file_metadata`) || [];
 
               return (
                 <div key={field.id} className="payload-card">
                   <div className="payload-card-header">
-                    <span className="payload-index-label">Briefing Item #{idx + 1}</span>
+                    <span className="payload-index-label">Disclosure Package #{idx + 1}</span>
                     {beaconFields.length > 1 && (
                       <button
                         type="button"
@@ -387,17 +425,136 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
                   </div>
 
                   <div className="field-group">
-                    <label className="field-label">Dispatched Content / Instructions</label>
+                    <label className="field-label">Dispatched Message / Operational Notes</label>
                     <textarea
                       {...register(`beacon_rows.${idx}.content`, {
-                        required: activeModules.beacon ? "Briefing content cannot be empty" : false,
+                        validate: (val) => {
+                          if (!activeModules.beacon) return true;
+                          const hasFiles =
+                            (watch(`beacon_rows.${idx}.file_metadata`) || []).length > 0;
+                          if (!val?.trim() && !hasFiles) {
+                            return "Please enter a message or attach at least one Drive asset.";
+                          }
+                          return true;
+                        },
                       })}
-                      placeholder="Confidential instructions, status alert, credentials, or situation report..."
+                      placeholder="Confidential instructions, master passwords, or notes accompanying attached assets..."
                       className="input-textarea"
                       rows={3}
                     />
+                    {errors.beacon_rows?.[idx]?.content && (
+                      <span className="field-validation">
+                        {errors.beacon_rows[idx].content.message}
+                      </span>
+                    )}
                   </div>
 
+                  {/* Google Drive Asset Attachments */}
+                  <div style={{ marginTop: "12px", marginBottom: "16px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <label className="field-label" style={{ margin: 0 }}>
+                        Attached Google Drive Assets
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => openDrivePicker(idx)}
+                        style={{
+                          background: "rgba(56, 189, 248, 0.1)",
+                          border: "1px solid rgba(56, 189, 248, 0.3)",
+                          color: "#38bdf8",
+                          padding: "5px 12px",
+                          borderRadius: "4px",
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <span>📎</span>
+                        {attachedFiles.length > 0
+                          ? `Manage Files (${attachedFiles.length})`
+                          : "Attach Drive Files"}
+                      </button>
+                    </div>
+
+                    {attachedFiles.length > 0 && (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "8px",
+                          background: "#080b11",
+                          border: "1px solid #1e293b",
+                          borderRadius: "6px",
+                          padding: "10px",
+                        }}
+                      >
+                        {attachedFiles.map((file) => (
+                          <div
+                            key={file.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              background: "#161b26",
+                              border: "1px solid #334155",
+                              borderRadius: "4px",
+                              padding: "4px 10px",
+                              fontSize: "12px",
+                              color: "#e2e8f0",
+                            }}
+                          >
+                            {file.iconLink ? (
+                              <img
+                                src={file.iconLink}
+                                alt=""
+                                style={{ width: "14px", height: "14px" }}
+                              />
+                            ) : (
+                              <span>📄</span>
+                            )}
+                            <span
+                              style={{
+                                maxWidth: "220px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                              title={file.name}
+                            >
+                              {file.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeDriveFile(idx, file.id)}
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                color: "#94a3b8",
+                                cursor: "pointer",
+                                fontSize: "14px",
+                                lineHeight: 1,
+                                padding: "0 2px",
+                              }}
+                              title="Remove file"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Routing & Clearances */}
                   <div className="payload-routing-grid">
                     <div className="field-group">
                       <label className="field-label">Clearance Tier</label>
@@ -414,7 +571,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
 
                     {trustValue === -1 && (
                       <div className="field-group">
-                        <label className="field-label">Target Recipient</label>
+                        <label className="field-label">Designated Recipient</label>
                         <select
                           {...register(`beacon_rows.${idx}.target_contact_id`, {
                             required: trustValue === -1 ? "Select recipient" : false,
@@ -443,9 +600,9 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
         <section className="form-section">
           <div className="section-legend-bar">
             <div>
-              <span className="section-legend">Data Releases: External Archives & Packages</span>
+              <span className="section-legend">External Vault Archives</span>
               <p className="field-hint" style={{ marginTop: "4px" }}>
-                Provide secure links or vault archives to be distributed upon switch expiration.
+                Provide external pre-signed URLs or vault download destinations.
               </p>
             </div>
             <button
@@ -493,7 +650,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
                     <label className="field-label">Download / Vault URL</label>
                     <input
                       {...register(`data_releases.${idx}.download_url`)}
-                      placeholder="https://drive.proton.me/... or S3 Presigned URL"
+                      placeholder="https://drive.proton.me/... or S3 URL"
                       className="input-text"
                     />
                   </div>
@@ -593,6 +750,21 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
           {submitting ? "Arming Switch..." : "Arm Dead Man's Switch"}
         </button>
       </div>
+
+      {/* Google Drive Selector Modal */}
+      <GoogleDrivePickerModal
+        isOpen={isDriveModalOpen}
+        onClose={() => {
+          setIsDriveModalOpen(false);
+          setActiveDriveRowIndex(null);
+        }}
+        initialSelected={
+          activeDriveRowIndex !== null
+            ? watch(`beacon_rows.${activeDriveRowIndex}.file_metadata`) || []
+            : []
+        }
+        onConfirm={handleDriveFilesConfirmed}
+      />
     </form>
   );
 }

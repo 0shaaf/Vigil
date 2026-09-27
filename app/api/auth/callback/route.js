@@ -9,24 +9,33 @@ export async function GET(request) {
   const error = searchParams.get("error");
   const state = searchParams.get("state");
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  console.log(request);
+  
+  const appUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
   if (error || !code) {
-    console.error("[Google OAuth Callback] Error returned:", error);
+    console.error("[Google OAuth Callback] Error or denied:", error);
     return NextResponse.redirect(new URL(`/dashboard?error=${encodeURIComponent(error || "access_denied")}`, appUrl));
   }
 
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
+    error: userErr,
   } = await supabase.auth.getUser();
 
-  if (!user || user.id !== state) {
-    return NextResponse.redirect(new URL("/dashboard?error=auth_mismatch", appUrl));
+  if (userErr || !user) {
+    console.error("[Google OAuth Callback] Active session missing:", userErr);
+    return NextResponse.redirect(new URL("/login?error=session_expired", appUrl));
+  }
+
+  if (user.id !== state) {
+    console.error("[Google OAuth Callback] State CSRF mismatch. Expected:", user.id, "Received:", state);
+    return NextResponse.redirect(new URL("/dashboard?error=csrf_mismatch", appUrl));
   }
 
   try {
-    // 1. Exchange authorization code for OAuth tokens
+    // 1. Exchange code for access & refresh tokens
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -34,7 +43,7 @@ export async function GET(request) {
         code,
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+        redirect_uri: process.env.GOOGLE_REDIRECT_URI, // Must match the initiate step exactly
         grant_type: "authorization_code",
       }),
     });
@@ -48,7 +57,7 @@ export async function GET(request) {
       );
     }
 
-    // 2. Fetch the connected Google account's email
+    // 2. Fetch Google account email
     let accountEmail = null;
     try {
       const profileRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
@@ -59,37 +68,40 @@ export async function GET(request) {
         accountEmail = profile.email;
       }
     } catch (e) {
-      console.warn("[Google OAuth Callback] Could not fetch profile email:", e);
+      console.warn("[Google OAuth Callback] Profile lookup failed:", e);
     }
 
-    // 3. Upsert integration into user_integrations
+    // 3. Prepare upsert data (safeguards refresh_token if Google skips it on re-consent)
     const expiresAt = tokens.expires_in
       ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
       : null;
 
-    const upsertPayload = {
+    const upsertData = {
       usr_id: user.id,
       provider: "google_drive",
       access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token, // Guaranteed by prompt=consent
       token_expiry: expiresAt,
       scopes: tokens.scope ? tokens.scope.split(" ") : [],
       account_email: accountEmail,
       updated_at: new Date().toISOString(),
     };
 
+    if (tokens.refresh_token) {
+      upsertData.refresh_token = tokens.refresh_token;
+    }
+
     const { error: dbError } = await supabase
       .from("user_integrations")
-      .upsert(upsertPayload, { onConflict: "usr_id, provider" });
+      .upsert(upsertData, { onConflict: "usr_id, provider" });
 
     if (dbError) {
-      console.error("[Google OAuth Callback] DB error saving integration:", dbError);
-      return NextResponse.redirect(new URL("/dashboard?error=db_save_failed", appUrl));
+      console.error("[Google OAuth Callback] DB save error:", dbError);
+      return NextResponse.redirect(new URL("/dashboard?error=db_error", appUrl));
     }
 
     return NextResponse.redirect(new URL("/dashboard?integration=google_connected", appUrl));
   } catch (err) {
-    console.error("[Google OAuth Callback] Fatal execution error:", err);
+    console.error("[Google OAuth Callback] Fatal execution failure:", err);
     return NextResponse.redirect(new URL("/dashboard?error=server_error", appUrl));
   }
 }
