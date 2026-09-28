@@ -1,8 +1,9 @@
 import { Resend } from "resend";
+import { getValidGoogleAccessToken, grantDriveFileAccess } from "./google-drive";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Default wait window: 24 hours (change to 5 * 60 * 1000 for local 5-minute testing)
+// Default wait window: 1 minute (adjust for production)
 export const ACK_TIMEOUT_MS = 1 * 60 * 1000;
 
 export async function processSwitchEscalation(supabase, sw) {
@@ -28,6 +29,14 @@ export async function processSwitchEscalation(supabase, sw) {
     .eq("switch_id", switchId);
 
   if (scErr || !switchContacts || switchContacts.length === 0) {
+    await supabase.from("escalation_logs").insert({
+      usr_id: sw.usr_id,
+      switch_id: switchId,
+      event_type: "TRIGGER_FIRED",
+      channel: "SYSTEM",
+      status: "FAILED",
+      details: "Escalation halted: No contacts linked to this switch.",
+    });
     return { status: "NO_CONTACTS" };
   }
 
@@ -59,7 +68,6 @@ export async function processSwitchEscalation(supabase, sw) {
 
       contact.status = "timed_out";
 
-      // Log the timeout event
       await supabase.from("escalation_logs").insert({
         usr_id: sw.usr_id,
         switch_id: switchId,
@@ -68,7 +76,9 @@ export async function processSwitchEscalation(supabase, sw) {
         recipient_email: contact.contacts?.email,
         trust_tier: contact.trust_score,
         status: "SUCCESS",
-        details: `Wait window expired without acknowledgment for ${contact.contacts?.contact_name || contact.contacts?.email}. Cascading to next priority tier.`,
+        details: `Wait window expired without acknowledgment for ${
+          contact.contacts?.contact_name || contact.contacts?.email
+        }. Cascading to next priority tier.`,
       });
     }
   }
@@ -83,7 +93,6 @@ export async function processSwitchEscalation(supabase, sw) {
   const pendingContacts = switchContacts.filter((c) => c.status === "pending");
 
   if (pendingContacts.length === 0) {
-    // All priority tiers exhausted without acknowledgment -> Transition switch to EXHAUSTED
     await supabase
       .from("switches")
       .update({ status: "EXHAUSTED" })
@@ -95,31 +104,35 @@ export async function processSwitchEscalation(supabase, sw) {
       event_type: "TRIGGER_FIRED",
       channel: "SYSTEM",
       status: "FAILED",
-      details: "All priority tiers have timed out. Switch marked as EXHAUSTED with zero acknowledgments.",
+      details: "All priority tiers timed out. Switch marked as EXHAUSTED with zero acknowledgments.",
     });
 
     return { status: "EXHAUSTED" };
   }
 
-  // 6. Identify the highest priority score among remaining pending contacts
+  // 6. Identify highest priority score among pending contacts
   const highestPriority = Math.max(
     ...pendingContacts.map((c) => Number(c.priority_score) || 0)
   );
 
-  // 7. Get ALL pending contacts sharing this highest priority (batch dispatch)
+  // 7. Batch contacts sharing highest priority
   const batchToNotify = pendingContacts.filter(
     (c) => (Number(c.priority_score) || 0) === highestPriority
   );
 
-  // 8. Fetch disclosure payloads tied to this switch (no usr_id column needed)
-  const { data: payloads } = await supabase
+  // 8. Fetch disclosure payloads (including file_metadata)
+  const { data: payloads, error: payloadErr } = await supabase
     .from("info_to_release")
-    .select("id, content, trust_required, target_contact_id")
+    .select("id, content, trust_required, target_contact_id, file_metadata")
     .eq("switch_id", switchId);
+
+  if (payloadErr) {
+    console.error("[Escalation] Error fetching payloads:", payloadErr);
+  }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-  // 9. Dispatch emails with individual acknowledgment tokens
+  // 9. Dispatch batch
   for (const target of batchToNotify) {
     const recipientEmail = target.contacts?.email;
     const recipientName = target.contacts?.contact_name || "Designated Contact";
@@ -128,67 +141,79 @@ export async function processSwitchEscalation(supabase, sw) {
 
     const ackToken = crypto.randomUUID();
 
-    // Match payloads:
-    // Mode 1: Targeted Exception (-1 or target_contact_id present) -> ONLY the designated recipient
-    // Mode 2: Tiered Clearance (trust_required >= 0 and no designated contact) -> Clearance rating check
+    try {
+      // Filter authorized payloads
+      const authorizedPayloads = (payloads || []).filter((p) => {
+        const isException = Number(p.trust_required) === -1 || Boolean(p.target_contact_id);
 
-    const authorizedPayloads = (payloads || []).filter((p) => {
-      const isException = Number(p.trust_required) === -1 || Boolean(p.target_contact_id);
+        if (isException) {
+          return (
+            Boolean(p.target_contact_id) &&
+            String(p.target_contact_id) === String(target.contact_id || target.contacts?.id)
+          );
+        }
 
-      if (isException) {
-        return (
-          Boolean(p.target_contact_id) &&
-          String(p.target_contact_id) === String(target.contact_id || target.contacts?.id)
-        );
+        const trustReq = Number(p.trust_required);
+        const contactTrust = Number(target.trust_score ?? 0);
+        return trustReq >= 0 && contactTrust >= trustReq;
+      });
+
+      const ackUrl = `${baseUrl}/api/ack/${ackToken}`;
+
+      // Retrieve valid access token (using supabase client)
+      let accessToken = null;
+      try {
+        accessToken = await getValidGoogleAccessToken(supabase, sw.usr_id);
+      } catch (tokenErr) {
+        console.warn("[Escalation] Failed retrieving Drive access token:", tokenErr);
       }
 
-      // Tiered clearance broadcast
-      const trustReq = Number(p.trust_required);
-      const contactTrust = Number(target.trust_score ?? 0);
-      return trustReq >= 0 && contactTrust >= trustReq;
-    });
-
-    const ackUrl = `${baseUrl}/api/ack/${ackToken}`;
-
-    // Inside the contact iteration loop in escalations.js:
-    const accessToken = await getValidGoogleAccessToken(supabaseAdmin, sw.usr_id);
-
-    for (const info of authorizedPayloads) {
-      const files = info.file_metadata || [];
-
-      // If this disclosure has attached files, unlock them for the contact's email
-      if (files.length > 0 && accessToken) {
-        for (const file of files) {
-          await grantDriveFileAccess(accessToken, file.id, target.contacts.email);
+      // Grant permissions on attached files
+      for (const info of authorizedPayloads) {
+        const files = Array.isArray(info.file_metadata) ? info.file_metadata : [];
+        if (files.length > 0 && accessToken) {
+          for (const file of files) {
+            await grantDriveFileAccess(accessToken, file.id, recipientEmail);
+          }
         }
       }
-    }
 
-    const payloadHtml =
-      authorizedPayloads.length > 0
-        ? authorizedPayloads
-          .map(
-            (p, idx) => `
-              <div style="background:#111622; border:1px solid #1e293b; border-radius:6px; padding:12px; margin-bottom:10px;">
-                <p style="color:#94a3b8; font-size:11px; margin:0 0 6px 0; text-transform:uppercase;">Disclosure #${idx + 1}</p>
-                <div style="color:#f1f5f9; font-family:monospace; font-size:13px; white-space:pre-wrap;">${p.content}</div>
-              </div>`
-          )
-          .join("")
-        : `<p style="color:#64748b; font-style:italic;">No secret disclosures designated for your security clearance tier.</p>
-        ${info.file_metadata?.length > 0 ? `
-           <div style="margin-top: 12px; padding: 12px; background: #161b26; border: 1px solid #1e293b; border-radius: 6px;">
-          <div style="font-size: 11px; text-transform: uppercase; color: #38bdf8; font-weight: 700; margin-bottom: 8px;">Attached Drive Assets</div>
-          ${info.file_metadata.map(f => `
-           <div style="margin-bottom: 6px;">
-        📄 <a href="${f.webViewLink}" target="_blank" style="color: #60a5fa; text-decoration: underline; font-size: 13px;">${f.name}</a>
-           </div>
-          `).join("")}
-           </div>
-            ` : ""}
-        `;
+      // Build payload HTML safely
+      const payloadHtml =
+        authorizedPayloads.length > 0
+          ? authorizedPayloads
+              .map(
+                (p, idx) => `
+                <div style="background:#111622; border:1px solid #1e293b; border-radius:6px; padding:12px; margin-bottom:10px;">
+                  <p style="color:#94a3b8; font-size:11px; margin:0 0 6px 0; text-transform:uppercase;">Disclosure #${idx + 1}</p>
+                  <div style="color:#f1f5f9; font-family:monospace; font-size:13px; white-space:pre-wrap;">${
+                    p.content || "<i>No text message attached.</i>"
+                  }</div>
+                  
+                  ${
+                    Array.isArray(p.file_metadata) && p.file_metadata.length > 0
+                      ? `
+                    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #1e293b;">
+                      <div style="font-size: 10px; text-transform: uppercase; color: #38bdf8; font-weight: 700; margin-bottom: 6px;">Attached Drive Assets</div>
+                      ${p.file_metadata
+                        .map(
+                          (f) => `
+                        <div style="margin-bottom: 4px;">
+                          📄 <a href="${f.webViewLink}" target="_blank" style="color: #60a5fa; text-decoration: underline; font-size: 13px;">${f.name}</a>
+                        </div>
+                      `
+                        )
+                        .join("")}
+                    </div>
+                  `
+                      : ""
+                  }
+                </div>`
+              )
+              .join("")
+          : `<p style="color:#64748b; font-style:italic;">No secret disclosures designated for your security clearance tier.</p>`;
 
-    try {
+      // Send outbound email
       await resend.emails.send({
         from: "Vigil Sentinel <onboarding@resend.dev>",
         to: recipientEmail,
@@ -230,7 +255,7 @@ export async function processSwitchEscalation(supabase, sw) {
         })
         .eq("id", target.id);
 
-      // Log dispatch
+      // Log success
       await supabase.from("escalation_logs").insert({
         usr_id: sw.usr_id,
         switch_id: switchId,
@@ -242,8 +267,8 @@ export async function processSwitchEscalation(supabase, sw) {
         details: `Dispatched priority ${highestPriority} escalation to ${recipientName} with ${authorizedPayloads.length} payloads.`,
         execution_metadata: { ack_token: ackToken, priority_score: highestPriority },
       });
-    } catch (sendErr) {
-      console.error(`[Escalation] Error notifying ${recipientEmail}:`, sendErr);
+    } catch (dispatchErr) {
+      console.error(`[Escalation] Fatal error dispatching to ${recipientEmail}:`, dispatchErr);
 
       await supabase.from("escalation_logs").insert({
         usr_id: sw.usr_id,
@@ -253,7 +278,7 @@ export async function processSwitchEscalation(supabase, sw) {
         recipient_email: recipientEmail,
         trust_tier: target.trust_score,
         status: "FAILED",
-        details: `Failed to dispatch email: ${sendErr.message}`,
+        details: `Failed to dispatch email: ${dispatchErr.message}`,
       });
     }
   }

@@ -63,7 +63,7 @@ export async function createSwitch(payload) {
       last_check_in: new Date().toISOString(),
       check_in_interval: sanitizedInterval,
       actions: sanitizedActions,
-      description : payload.description
+      description: payload.description
     })
     .select()
     .single();
@@ -96,21 +96,22 @@ export async function createSwitch(payload) {
   }
 
   // 5. Insert disclosures/briefings into info_to_release
-  if (Array.isArray(payload.beacon_rows) && payload.beacon_rows.length > 0) {
-    const disclosureRows = payload.beacon_rows.map((row) => ({
+  const beaconRows = payload.beacon_rows || [];
+  if (beaconRows.length > 0) {
+    const infoInserts = beaconRows.map((row) => ({
       switch_id: newSwitch.id,
-      content: row.content?.trim(),
-      trust_required: Number(row.trust_required ?? 0),
-      target_contact_id: row.target_contact_id || null, // null prevents Postgres UUID syntax error
+      content: row.content || "",
+      trust_required: row.trust_required,
+      target_contact_id: row.target_contact_id || null,
+      file_metadata: Array.isArray(row.file_metadata) ? row.file_metadata : [],
     }));
 
-    const { error: disclosureErr } = await supabase
+    const { error: infoErr } = await supabase
       .from("info_to_release")
-      .insert(disclosureRows);
+      .insert(infoInserts);
 
-    if (disclosureErr) {
-      console.error("[createSwitch] Disclosures Error:", disclosureErr);
-      throw new Error(disclosureErr);
+    if (infoErr) {
+      console.error("[createSwitch] Error inserting disclosures:", infoErr);
     }
   }
 
@@ -157,7 +158,8 @@ export async function getSwitchById(switchId) {
         id,
         content,
         trust_required,
-        target_contact_id
+        target_contact_id,
+        file_metadata
       )
     `)
     .eq("id", switchId)
@@ -196,23 +198,37 @@ export async function getSwitchById(switchId) {
   };
 }
 
-/**
+
+/*
  * 3. UPDATE SWITCH
- * Updates metadata, interval, and actions without altering timing, status, or user ID.
+ * Updates metadata, interval, modular actions, and synchronized disclosure payloads
+ * (including Google Drive file_metadata).
  */
 export async function updateSwitch(switchId, updatePayload) {
   const supabase = await createSupabaseServerClient();
 
+  const {
+    data: { user },
+    error: authErr,
+  } = await supabase.auth.getUser();
+
+  if (authErr || !user) {
+    throw new Error("Unauthorized. Please log in to update this switch.");
+  }
+
+  // 1. Verify switch ownership
   const { data: existing, error: fetchErr } = await supabase
     .from("switches")
-    .select("actions, check_in_interval, status")
+    .select("id, usr_id, actions, check_in_interval, status")
     .eq("id", switchId)
+    .eq("usr_id", user.id)
     .single();
 
   if (fetchErr || !existing) {
     throw new Error("Target switch not found or access denied.");
   }
 
+  // 2. Sanitize countdown interval
   const sanitizedInterval = {
     months: Number(updatePayload.check_in_interval?.months ?? existing.check_in_interval?.months ?? 0),
     days: Number(updatePayload.check_in_interval?.days ?? existing.check_in_interval?.days ?? 0),
@@ -220,6 +236,17 @@ export async function updateSwitch(switchId, updatePayload) {
     minutes: Number(updatePayload.check_in_interval?.minutes ?? existing.check_in_interval?.minutes ?? 0),
   };
 
+  const totalMinutes =
+    sanitizedInterval.months * 43200 +
+    sanitizedInterval.days * 1440 +
+    sanitizedInterval.hours * 60 +
+    sanitizedInterval.minutes;
+
+  if (totalMinutes <= 0) {
+    throw new Error("Interval duration must be greater than zero minutes.");
+  }
+
+  // 3. Merge actions and module flags
   const mergedActions = {
     ...existing.actions,
     ...updatePayload.actions,
@@ -229,6 +256,7 @@ export async function updateSwitch(switchId, updatePayload) {
     },
   };
 
+  // 4. Update parent switch record
   const updateFields = {
     name: updatePayload.name?.trim(),
     criticality: updatePayload.criticality || "OPERATIONAL",
@@ -241,6 +269,7 @@ export async function updateSwitch(switchId, updatePayload) {
     .from("switches")
     .update(updateFields)
     .eq("id", switchId)
+    .eq("usr_id", user.id)
     .select()
     .single();
 
@@ -249,8 +278,47 @@ export async function updateSwitch(switchId, updatePayload) {
     throw new Error(updateErr.message);
   }
 
+  // 5. Synchronize Disclosures (info_to_release)
+  if (Array.isArray(updatePayload.beacon_rows)) {
+    // Delete old disclosures for this switch
+    const { error: deleteErr } = await supabase
+      .from("info_to_release")
+      .delete()
+      .eq("switch_id", switchId);
+
+    if (deleteErr) {
+      console.error("[updateSwitch] Error removing stale disclosures:", deleteErr);
+      throw new Error("Failed to clear previous disclosures.");
+    }
+
+    // Insert updated disclosure rows if beacon module is enabled
+    if (mergedActions.modules?.beacon && updatePayload.beacon_rows.length > 0) {
+      const infoInserts = updatePayload.beacon_rows.map((row) => {
+        const trustVal = Number(row.trust_required ?? 50);
+        return {
+          switch_id: switchId,
+          content: row.content?.trim() || "",
+          trust_required: trustVal,
+          target_contact_id:
+            trustVal === -1 && row.target_contact_id ? row.target_contact_id : null,
+          file_metadata: Array.isArray(row.file_metadata) ? row.file_metadata : [],
+        };
+      });
+
+      const { error: insertErr } = await supabase
+        .from("info_to_release")
+        .insert(infoInserts);
+
+      if (insertErr) {
+        console.error("[updateSwitch] Error inserting updated disclosures:", insertErr);
+        throw new Error("Failed to save updated disclosure items.");
+      }
+    }
+  }
+
   revalidatePath(`/dashboard/switches/${switchId}`);
   revalidatePath("/dashboard/switches");
+  revalidatePath("/dashboard");
   return updatedSwitch;
 }
 

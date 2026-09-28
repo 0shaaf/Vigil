@@ -89,6 +89,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
     fields: beaconFields,
     append: appendBeacon,
     remove: removeBeacon,
+    update: updateBeacon, // <-- Add this
   } = useFieldArray({
     control,
     name: "beacon_rows",
@@ -112,17 +113,20 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
 
   const handleDriveFilesConfirmed = (selectedFiles) => {
     if (activeDriveRowIndex !== null) {
-      setValue(`beacon_rows.${activeDriveRowIndex}.file_metadata`, selectedFiles, {
-        shouldDirty: true,
+      const currentRow = watch(`beacon_rows.${activeDriveRowIndex}`) || {};
+      updateBeacon(activeDriveRowIndex, {
+        ...currentRow,
+        file_metadata: selectedFiles,
       });
     }
   };
 
   const removeDriveFile = (rowIndex, fileId) => {
-    const currentFiles = watch(`beacon_rows.${rowIndex}.file_metadata`) || [];
-    const updated = currentFiles.filter((f) => f.id !== fileId);
-    setValue(`beacon_rows.${rowIndex}.file_metadata`, updated, {
-      shouldDirty: true,
+    const currentRow = watch(`beacon_rows.${rowIndex}`) || {};
+    const currentFiles = currentRow.file_metadata || [];
+    updateBeacon(rowIndex, {
+      ...currentRow,
+      file_metadata: currentFiles.filter((f) => f.id !== fileId),
     });
   };
 
@@ -167,21 +171,21 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
       // 4. Sanitize beacon disclosures (accepts text, files, or both)
       const sanitizedBeaconRows = formData.action_modules?.beacon
         ? (formData.beacon_rows || [])
-            .filter(
-              (row) =>
-                row.content?.trim() ||
-                (Array.isArray(row.file_metadata) && row.file_metadata.length > 0)
-            )
-            .map((row) => {
-              const trustVal = Number(row.trust_required);
-              return {
-                content: row.content?.trim() || "",
-                trust_required: trustVal,
-                target_contact_id:
-                  trustVal === -1 && row.target_contact_id ? row.target_contact_id : null,
-                file_metadata: Array.isArray(row.file_metadata) ? row.file_metadata : [],
-              };
-            })
+          .filter(
+            (row) =>
+              row.content?.trim() ||
+              (Array.isArray(row.file_metadata) && row.file_metadata.length > 0)
+          )
+          .map((row) => {
+            const trustVal = Number(row.trust_required);
+            return {
+              content: row.content?.trim() || "",
+              trust_required: trustVal,
+              target_contact_id:
+                trustVal === -1 && row.target_contact_id ? row.target_contact_id : null,
+              file_metadata: Array.isArray(row.file_metadata) ? row.file_metadata : [], // <-- PASS THROUGH
+            };
+          })
         : [];
 
       // 5. Build normalized payload

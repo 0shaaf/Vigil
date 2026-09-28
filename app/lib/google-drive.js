@@ -59,3 +59,38 @@ export async function getValidGoogleAccessToken(supabase, userId) {
     return null;
   }
 }
+
+/**
+ * Grants reader permissions on a Drive file to a specific recipient email.
+ */
+export async function grantDriveFileAccess(accessToken, fileId, recipientEmail) {
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}/permissions?sendNotificationEmail=false`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: "reader",
+          type: "user",
+          emailAddress: recipientEmail,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.warn(`[Drive Share] Failed to share file ${fileId} with ${recipientEmail}:`, data);
+      return { success: false, error: data.error?.message };
+    }
+
+    return { success: true, permissionId: data.id };
+  } catch (err) {
+    console.error(`[Drive Share Fatal] Exception sharing file ${fileId}:`, err);
+    return { success: false, error: err.message };
+  }
+}
