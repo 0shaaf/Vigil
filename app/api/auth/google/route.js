@@ -29,16 +29,20 @@ export async function GET() {
     "https://www.googleapis.com/auth/drive.readonly",
     "https://www.googleapis.com/auth/drive.file",
     "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/drive"
   ].join(" ");
 
+
   const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    redirect_uri: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback`, // verify exact path
     response_type: "code",
-    scope: scopes,
     access_type: "offline",
-    prompt: "consent", // Guarantees Google always sends back a refresh_token
-    state: user.id,    // Verified in callback to prevent CSRF
+    prompt: "consent", // FORCES Google to show the new scope checkbox
+    scope: [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/drive", // Full Drive access
+    ].join(" "),
   });
 
   return NextResponse.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
