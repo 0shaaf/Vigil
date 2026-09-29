@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { getValidGoogleAccessToken, grantDriveFileAccess } from "./google-drive";
-import { executeLockdownWebhook } from "./webhooks";
+import { executeLockdownWebhook } from "./webhook";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
