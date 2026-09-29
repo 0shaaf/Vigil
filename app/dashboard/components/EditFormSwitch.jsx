@@ -9,7 +9,6 @@ import GoogleDrivePickerModal from "@/app/compontents/GoogleDrivePickerModal";
 export default function EditFormSwitch({ initialSwitch, availableContacts = [] }) {
   const router = useRouter();
 
-  // Contacts fallback if not explicitly passed as prop
   const contactsList =
     availableContacts.length > 0
       ? availableContacts
@@ -23,9 +22,9 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
 
   // Interval Units
   const [months, setMonths] = useState(initialSwitch?.check_in_interval?.months ?? 0);
-  const [days, setDays] = useState(initialSwitch?.check_in_interval?.days ?? 0);""
-  const [hours, setHours] = useState(initialSwitch?.check_in_interval?.hours ?? 0);""
-  const [minutes, setMinutes] = useState(initialSwitch?.check_in_interval?.minutes ?? 0);""
+  const [days, setDays] = useState(initialSwitch?.check_in_interval?.days ?? 0);
+  const [hours, setHours] = useState(initialSwitch?.check_in_interval?.hours ?? 0);
+  const [minutes, setMinutes] = useState(initialSwitch?.check_in_interval?.minutes ?? 0);
 
   // Modular Actions
   const [modules, setModules] = useState({
@@ -33,6 +32,16 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
     data_release: Boolean(initialSwitch?.actions?.modules?.data_release ?? false),
     purge: Boolean(initialSwitch?.actions?.modules?.purge ?? false),
     lockdown: Boolean(initialSwitch?.actions?.modules?.lockdown ?? false),
+  });
+
+  // Lockdown Webhook Configuration State
+  const [lockdownConfig, setLockdownConfig] = useState({
+    http_method: initialSwitch?.actions?.lockdown_config?.http_method || "POST",
+    webhook_url: initialSwitch?.actions?.lockdown_config?.webhook_url || "",
+    auth_header: initialSwitch?.actions?.lockdown_config?.auth_header || "",
+    payload_json:
+      initialSwitch?.actions?.lockdown_config?.payload_json ||
+      '{\n  "action": "REVOKE_ALL_SESSIONS"\n}',
   });
 
   // Disclosures / Beacon rows with Drive files
@@ -122,7 +131,6 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
     setSaving(true);
     setStatusMsg({ type: "", text: "" });
 
-    // Validate that interval is > 0
     if (months === 0 && days === 0 && hours === 0 && minutes === 0) {
       setStatusMsg({ type: "error", text: "Countdown interval must be greater than 0 minutes." });
       setSaving(false);
@@ -163,6 +171,7 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
         actions: {
           ...initialSwitch.actions,
           modules,
+          lockdown_config: modules.lockdown ? lockdownConfig : null,
         },
         beacon_rows: sanitizedBeaconRows,
       };
@@ -335,6 +344,85 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
             </span>
           </div>
         </div>
+
+        {/* Lockdown Webhook Settings Form */}
+        {modules.lockdown && (
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "16px",
+              background: "#0b0f19",
+              border: "1px solid #1e293b",
+              borderRadius: "8px",
+            }}
+          >
+            <div className="form-section-title" style={{ margin: "0 0 12px 0" }}>
+              Lockdown Webhook Parameters
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "110px 1fr 1fr",
+                gap: "12px",
+                marginBottom: "12px",
+              }}
+            >
+              <div className="form-group">
+                <label className="form-label">Method</label>
+                <select
+                  value={lockdownConfig.http_method}
+                  onChange={(e) =>
+                    setLockdownConfig({ ...lockdownConfig, http_method: e.target.value })
+                  }
+                  className="form-select"
+                >
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Webhook URL</label>
+                <input
+                  type="url"
+                  value={lockdownConfig.webhook_url}
+                  onChange={(e) =>
+                    setLockdownConfig({ ...lockdownConfig, webhook_url: e.target.value })
+                  }
+                  placeholder="https://api.yourcloud.com/v1/kill-switch"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Auth Header</label>
+                <input
+                  type="text"
+                  value={lockdownConfig.auth_header}
+                  onChange={(e) =>
+                    setLockdownConfig({ ...lockdownConfig, auth_header: e.target.value })
+                  }
+                  placeholder="Bearer your-secret-token"
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Custom Payload (JSON)</label>
+              <textarea
+                value={lockdownConfig.payload_json}
+                onChange={(e) =>
+                  setLockdownConfig({ ...lockdownConfig, payload_json: e.target.value })
+                }
+                rows={3}
+                className="form-input"
+                style={{ fontFamily: "monospace", fontSize: "12px" }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 4. Compartmentalized Briefings & Drive Releases */}
@@ -435,7 +523,7 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
                       marginBottom: "8px",
                     }}
                   >
-                    <label className="form-label" style={{ margin: 0 }}>
+                    <label className="field-label" style={{ margin: 0 }}>
                       Google Drive Attachments
                     </label>
                     <button
@@ -451,7 +539,10 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
                         cursor: "pointer",
                       }}
                     >
-                      📎 {row.file_metadata?.length > 0 ? `Manage Files (${row.file_metadata.length})` : "Attach Drive Files"}
+                      📎{" "}
+                      {row.file_metadata?.length > 0
+                        ? `Manage Files (${row.file_metadata.length})`
+                        : "Attach Drive Files"}
                     </button>
                   </div>
 
@@ -529,7 +620,9 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
                     <label className="form-label">Clearance Tier</label>
                     <select
                       value={row.trust_required}
-                      onChange={(e) => updateBeaconRow(idx, "trust_required", Number(e.target.value))}
+                      onChange={(e) =>
+                        updateBeaconRow(idx, "trust_required", Number(e.target.value))
+                      }
                       className="form-select"
                     >
                       <option value={75}>High Clearance (Trust &ge; 75)</option>
@@ -544,7 +637,9 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
                       <label className="form-label">Target Recipient</label>
                       <select
                         value={row.target_contact_id || ""}
-                        onChange={(e) => updateBeaconRow(idx, "target_contact_id", e.target.value)}
+                        onChange={(e) =>
+                          updateBeaconRow(idx, "target_contact_id", e.target.value)
+                        }
                         className="form-select"
                       >
                         <option value="">Choose designated contact...</option>

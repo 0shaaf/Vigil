@@ -22,7 +22,6 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
     control,
     handleSubmit,
     watch,
-    setValue,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -34,10 +33,10 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
 
       // Enabled Action Modules
       action_modules: {
-        beacon: true, // Reach Out / Clearance-based briefings & file disclosures
-        data_release: false, // File & payload downloads
-        purge: false, // Cloud data wiping
-        lockdown: false, // Key revocation & kill-switch webhooks
+        beacon: true,
+        data_release: false,
+        purge: false,
+        lockdown: false,
       },
 
       // Contact clearances
@@ -48,7 +47,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
         trust_score: 50,
       })),
 
-      // ACTION 1: Full Compartmentalized Reach Out / Beacon Engine
+      // ACTION 1: Reach Out / Beacon Engine
       beacon_rows: [
         {
           content: "",
@@ -58,7 +57,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
         },
       ],
 
-      // ACTION 2: Data Release Engine (Files / Vault Archives)
+      // ACTION 2: Data Releases
       data_releases: [
         {
           title: "",
@@ -68,7 +67,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
         },
       ],
 
-      // ACTION 3: Data Purge Engine (Cloud Wipe)
+      // ACTION 3: Data Purge Engine
       purge_config: {
         provider: "GOOGLE_DRIVE",
         target_resource_id: "",
@@ -89,7 +88,7 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
     fields: beaconFields,
     append: appendBeacon,
     remove: removeBeacon,
-    update: updateBeacon, // <-- Add this
+    update: updateBeacon,
   } = useFieldArray({
     control,
     name: "beacon_rows",
@@ -165,27 +164,33 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
           ? (formData.data_releases || []).filter((r) => r.title || r.download_url)
           : [],
         purge_config: formData.action_modules?.purge ? formData.purge_config : null,
-        lockdown_config: formData.action_modules?.lockdown ? formData.lockdown_config : null,
+        lockdown_config: formData.action_modules?.lockdown
+          ? formData.lockdown_config
+          : null,
       };
 
-      // 4. Sanitize beacon disclosures (accepts text, files, or both)
+      // 4. Sanitize beacon disclosures
       const sanitizedBeaconRows = formData.action_modules?.beacon
         ? (formData.beacon_rows || [])
-          .filter(
-            (row) =>
-              row.content?.trim() ||
-              (Array.isArray(row.file_metadata) && row.file_metadata.length > 0)
-          )
-          .map((row) => {
-            const trustVal = Number(row.trust_required);
-            return {
-              content: row.content?.trim() || "",
-              trust_required: trustVal,
-              target_contact_id:
-                trustVal === -1 && row.target_contact_id ? row.target_contact_id : null,
-              file_metadata: Array.isArray(row.file_metadata) ? row.file_metadata : [], // <-- PASS THROUGH
-            };
-          })
+            .filter(
+              (row) =>
+                row.content?.trim() ||
+                (Array.isArray(row.file_metadata) && row.file_metadata.length > 0)
+            )
+            .map((row) => {
+              const trustVal = Number(row.trust_required);
+              return {
+                content: row.content?.trim() || "",
+                trust_required: trustVal,
+                target_contact_id:
+                  trustVal === -1 && row.target_contact_id
+                    ? row.target_contact_id
+                    : null,
+                file_metadata: Array.isArray(row.file_metadata)
+                  ? row.file_metadata
+                  : [],
+              };
+            })
         : [];
 
       // 5. Build normalized payload
@@ -230,10 +235,18 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
             placeholder="e.g. Master Vault Credentials & Infrastructure"
             className="input-text"
           />
-          {errors.name && <span className="field-validation">{errors.name.message}</span>}
+          {errors.name && (
+            <span className="field-validation">{errors.name.message}</span>
+          )}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "12px",
+          }}
+        >
           <div className="field-group">
             <label className="field-label">Purpose Domain</label>
             <select {...register("purpose")} className="select-input">
@@ -247,8 +260,12 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
           <div className="field-group">
             <label className="field-label">Criticality Tier</label>
             <select {...register("criticality")} className="select-input">
-              <option value="CRITICAL">Critical (Catastrophic / Irreversible)</option>
-              <option value="OPERATIONAL">Operational (Standard Vigilance)</option>
+              <option value="CRITICAL">
+                Critical (Catastrophic / Irreversible)
+              </option>
+              <option value="OPERATIONAL">
+                Operational (Standard Vigilance)
+              </option>
               <option value="SENTINEL">Sentinel (Routine Heartbeat)</option>
             </select>
           </div>
@@ -268,31 +285,55 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
       {/* 2. Check-In Interval */}
       <section className="form-section">
         <span className="section-legend">Trip Interval</span>
-        <div className="interval-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+        <div
+          className="interval-grid"
+          style={{ gridTemplateColumns: "repeat(4, 1fr)" }}
+        >
           <div className="interval-box">
             <label>Months</label>
-            <input type="number" min="0" max="24" {...register("check_in_interval.months")} />
+            <input
+              type="number"
+              min="0"
+              max="24"
+              {...register("check_in_interval.months")}
+            />
           </div>
           <div className="interval-box">
             <label>Days</label>
-            <input type="number" min="0" max="365" {...register("check_in_interval.days")} />
+            <input
+              type="number"
+              min="0"
+              max="365"
+              {...register("check_in_interval.days")}
+            />
           </div>
           <div className="interval-box">
             <label>Hours</label>
-            <input type="number" min="0" max="23" {...register("check_in_interval.hours")} />
+            <input
+              type="number"
+              min="0"
+              max="23"
+              {...register("check_in_interval.hours")}
+            />
           </div>
           <div className="interval-box">
             <label>Minutes</label>
-            <input type="number" min="0" max="59" {...register("check_in_interval.minutes")} />
+            <input
+              type="number"
+              min="0"
+              max="59"
+              {...register("check_in_interval.minutes")}
+            />
           </div>
         </div>
       </section>
 
-      {/* 3. Authorized Contacts Pool */}
+      {/* 3. Authorized Recipients Pool */}
       <section className="form-section">
         <span className="section-legend">Authorized Recipients Pool</span>
         <p className="field-hint">
-          Contacts who receive graduated briefings based on Priority and Trust clearance ratings.
+          Contacts who receive graduated briefings based on Priority and Trust
+          clearance ratings.
         </p>
         {availableContacts.length === 0 ? (
           <div className="contacts-empty-box">
@@ -318,7 +359,10 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
                   value={contact.id}
                 />
                 <div className="c-col-check">
-                  <input type="checkbox" {...register(`contacts.${index}.selected`)} />
+                  <input
+                    type="checkbox"
+                    {...register(`contacts.${index}.selected`)}
+                  />
                 </div>
                 <div className="c-col-name">{contact.contact_name}</div>
                 <div className="c-col-email">{contact.email}</div>
@@ -349,47 +393,66 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
       {/* 4. Action Modules Selector */}
       <section className="form-section">
         <span className="section-legend">Escalation Action Modules</span>
-        <p className="field-hint">Enable autonomous actions to trigger when this switch trips.</p>
+        <p className="field-hint">
+          Enable autonomous actions to trigger when this switch trips.
+        </p>
         <div className="actions-checkbox-group">
           <label className="checkbox-card">
             <input type="checkbox" {...register("action_modules.beacon")} />
             <div className="checkbox-meta">
-              <span className="checkbox-title">🚨 Emergency Beacon / Disclosures</span>
-              <span className="checkbox-desc">Graduated briefings & Drive files routed via clearance or sole recipient.</span>
+              <span className="checkbox-title">
+                🚨 Emergency Beacon / Disclosures
+              </span>
+              <span className="checkbox-desc">
+                Graduated briefings & Drive files routed via clearance or sole
+                recipient.
+              </span>
             </div>
           </label>
           <label className="checkbox-card">
-            <input type="checkbox" {...register("action_modules.data_release")} />
+            <input
+              type="checkbox"
+              {...register("action_modules.data_release")}
+            />
             <div className="checkbox-meta">
               <span className="checkbox-title">📦 Data Release Packages</span>
-              <span className="checkbox-desc">Transmit external archives and encrypted vault links.</span>
+              <span className="checkbox-desc">
+                Transmit external archives and encrypted vault links.
+              </span>
             </div>
           </label>
           <label className="checkbox-card">
             <input type="checkbox" {...register("action_modules.purge")} />
             <div className="checkbox-meta">
               <span className="checkbox-title">🔥 Remote Purge</span>
-              <span className="checkbox-desc">Trigger cloud storage shredding or account wipe.</span>
+              <span className="checkbox-desc">
+                Trigger cloud storage shredding or account wipe.
+              </span>
             </div>
           </label>
           <label className="checkbox-card">
             <input type="checkbox" {...register("action_modules.lockdown")} />
             <div className="checkbox-meta">
               <span className="checkbox-title">⚡ Infrastructure Lockdown</span>
-              <span className="checkbox-desc">Fire kill-switch webhooks to revoke tokens & keys.</span>
+              <span className="checkbox-desc">
+                Fire kill-switch webhooks to revoke tokens & keys.
+              </span>
             </div>
           </label>
         </div>
       </section>
 
-      {/* MODULE 1: COMPARTMENTALIZED BRIEFINGS & DRIVE RELEASES */}
+      {/* MODULE 1: BRIEFINGS & DRIVE RELEASES */}
       {activeModules.beacon && (
         <section className="form-section">
           <div className="section-legend-bar">
             <div>
-              <span className="section-legend">Emergency Disclosures & File Releases</span>
+              <span className="section-legend">
+                Emergency Disclosures & File Releases
+              </span>
               <p className="field-hint" style={{ marginTop: "4px" }}>
-                Deliver confidential messages and Google Drive assets to designated contacts or clearance tiers.
+                Deliver confidential messages and Google Drive assets to
+                designated contacts or clearance tiers.
               </p>
             </div>
             <button
@@ -410,13 +473,18 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
 
           <div className="payloads-stack">
             {beaconFields.map((field, idx) => {
-              const trustValue = Number(watch(`beacon_rows.${idx}.trust_required`));
-              const attachedFiles = watch(`beacon_rows.${idx}.file_metadata`) || [];
+              const trustValue = Number(
+                watch(`beacon_rows.${idx}.trust_required`)
+              );
+              const attachedFiles =
+                watch(`beacon_rows.${idx}.file_metadata`) || [];
 
               return (
                 <div key={field.id} className="payload-card">
                   <div className="payload-card-header">
-                    <span className="payload-index-label">Disclosure Package #{idx + 1}</span>
+                    <span className="payload-index-label">
+                      Disclosure Package #{idx + 1}
+                    </span>
                     {beaconFields.length > 1 && (
                       <button
                         type="button"
@@ -429,13 +497,16 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
                   </div>
 
                   <div className="field-group">
-                    <label className="field-label">Dispatched Message / Operational Notes</label>
+                    <label className="field-label">
+                      Dispatched Message / Operational Notes
+                    </label>
                     <textarea
                       {...register(`beacon_rows.${idx}.content`, {
                         validate: (val) => {
                           if (!activeModules.beacon) return true;
                           const hasFiles =
-                            (watch(`beacon_rows.${idx}.file_metadata`) || []).length > 0;
+                            (watch(`beacon_rows.${idx}.file_metadata`) || [])
+                              .length > 0;
                           if (!val?.trim() && !hasFiles) {
                             return "Please enter a message or attach at least one Drive asset.";
                           }
@@ -567,9 +638,13 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
                         className="select-input"
                       >
                         <option value={75}>High Clearance (Trust &ge; 75)</option>
-                        <option value={50}>Medium Clearance (Trust &ge; 50)</option>
+                        <option value={50}>
+                          Medium Clearance (Trust &ge; 50)
+                        </option>
                         <option value={25}>Low Clearance (Trust &ge; 25)</option>
-                        <option value={-1}>Designated Sole Recipient (-1)</option>
+                        <option value={-1}>
+                          Designated Sole Recipient (-1)
+                        </option>
                       </select>
                     </div>
 
@@ -578,7 +653,8 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
                         <label className="field-label">Designated Recipient</label>
                         <select
                           {...register(`beacon_rows.${idx}.target_contact_id`, {
-                            required: trustValue === -1 ? "Select recipient" : false,
+                            required:
+                              trustValue === -1 ? "Select recipient" : false,
                           })}
                           className="select-input"
                         >
@@ -641,7 +717,13 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
                   )}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "12px",
+                  }}
+                >
                   <div className="field-group">
                     <label className="field-label">Package Label</label>
                     <input
@@ -660,9 +742,17 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "2fr 1fr",
+                    gap: "12px",
+                  }}
+                >
                   <div className="field-group">
-                    <label className="field-label">Decryption Hint / Key Location</label>
+                    <label className="field-label">
+                      Decryption Hint / Key Location
+                    </label>
                     <input
                       {...register(`data_releases.${idx}.encryption_key_hint`)}
                       placeholder="e.g. Master GPG key on hardware YubiKey"
@@ -691,17 +781,28 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
       {activeModules.purge && (
         <section className="form-section">
           <span className="section-legend">Remote Purge: Storage Shredding</span>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "12px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 2fr",
+              gap: "12px",
+            }}
+          >
             <div className="field-group">
               <label className="field-label">Target Provider</label>
-              <select {...register("purge_config.provider")} className="select-input">
+              <select
+                {...register("purge_config.provider")}
+                className="select-input"
+              >
                 <option value="GOOGLE_DRIVE">Google Drive Folder</option>
                 <option value="AWS_S3">Amazon AWS S3 Bucket</option>
                 <option value="CUSTOM_API">Custom Purge Endpoint</option>
               </select>
             </div>
             <div className="field-group">
-              <label className="field-label">Target Identifier / Folder ID / Path</label>
+              <label className="field-label">
+                Target Identifier / Folder ID / Path
+              </label>
               <input
                 {...register("purge_config.target_resource_id")}
                 placeholder="Folder ID, Bucket Name, or Directory Path to shred"
@@ -715,11 +816,24 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
       {/* MODULE 4: INFRASTRUCTURE LOCKDOWN */}
       {activeModules.lockdown && (
         <section className="form-section">
-          <span className="section-legend">Infrastructure Lockdown: Emergency Webhook</span>
-          <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 1fr", gap: "12px" }}>
+          <span className="section-legend">
+            Infrastructure Lockdown: Emergency Webhook
+          </span>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "110px 1fr 1fr",
+              gap: "12px",
+              marginBottom: "12px",
+            }}
+          >
             <div className="field-group">
               <label className="field-label">Method</label>
-              <select {...register("lockdown_config.http_method")} className="select-input">
+              <select
+                {...register("lockdown_config.http_method")}
+                className="select-input"
+              >
                 <option value="POST">POST</option>
                 <option value="PUT">PUT</option>
                 <option value="DELETE">DELETE</option>
@@ -728,19 +842,41 @@ export default function CreateSwitchForm({ availableContacts = [] }) {
             <div className="field-group">
               <label className="field-label">Webhook URL</label>
               <input
-                {...register("lockdown_config.webhook_url")}
+                type="url"
+                {...register("lockdown_config.webhook_url", {
+                  required: activeModules.lockdown
+                    ? "Webhook URL is required when lockdown is armed"
+                    : false,
+                })}
                 placeholder="https://api.yourcloud.com/v1/emergency-shutdown"
                 className="input-text"
               />
+              {errors.lockdown_config?.webhook_url && (
+                <span className="field-validation">
+                  {errors.lockdown_config.webhook_url.message}
+                </span>
+              )}
             </div>
             <div className="field-group">
               <label className="field-label">Authorization Header</label>
               <input
+                type="text"
                 {...register("lockdown_config.auth_header")}
                 placeholder="Bearer your-secret-token"
                 className="input-text"
               />
             </div>
+          </div>
+
+          <div className="field-group">
+            <label className="field-label">Custom Payload (JSON)</label>
+            <textarea
+              {...register("lockdown_config.payload_json")}
+              placeholder='{\n  "action": "REVOKE_ALL_SESSIONS"\n}'
+              className="input-textarea"
+              rows={3}
+              style={{ fontFamily: "monospace", fontSize: "12px" }}
+            />
           </div>
         </section>
       )}

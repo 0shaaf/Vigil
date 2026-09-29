@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "../lib/supabase/server-client";
 
-
 export async function createSwitch(payload) {
   const supabase = await createSupabaseServerClient();
 
@@ -24,7 +23,6 @@ export async function createSwitch(payload) {
     minutes: Number(payload.check_in_interval?.minutes || 0),
   };
 
-  // Validate interval > 0
   const totalMinutes =
     sanitizedInterval.months * 43200 +
     sanitizedInterval.days * 1440 +
@@ -35,7 +33,7 @@ export async function createSwitch(payload) {
     throw new Error("Interval duration must be greater than zero minutes.");
   }
 
-  // 2. Preserve module flags AND module configurations
+  // 2. Preserve module flags AND configs
   const sanitizedActions = {
     email: payload.actions?.email ?? true,
     modules: {
@@ -45,10 +43,11 @@ export async function createSwitch(payload) {
       lockdown: payload.actions?.modules?.lockdown ?? false,
       ...payload.actions?.modules,
     },
-    // Preserve sub-module configs from CreateSwitchForm
     data_releases: payload.actions?.data_releases || [],
     purge_config: payload.actions?.purge_config || null,
     lockdown_config: payload.actions?.lockdown_config || null,
+    lockdown_executed: false,
+    lockdown_executed_at: null,
   };
 
   // 3. Insert parent switch record
@@ -63,7 +62,7 @@ export async function createSwitch(payload) {
       last_check_in: new Date().toISOString(),
       check_in_interval: sanitizedInterval,
       actions: sanitizedActions,
-      description: payload.description
+      description: payload.description,
     })
     .select()
     .single();
@@ -119,11 +118,6 @@ export async function createSwitch(payload) {
   return newSwitch;
 }
 
-/**
- * 2. GET SWITCH BY ID
- * Retrieves switch with its current status, normalized interval,
- * linked contacts (including priority, trust, status, ack dates), and payloads.
- */
 export async function getSwitchById(switchId) {
   const supabase = await createSupabaseServerClient();
 
@@ -186,6 +180,11 @@ export async function getSwitchById(switchId) {
       lockdown: sw.actions?.modules?.lockdown ?? false,
       ...sw.actions?.modules,
     },
+    data_releases: sw.actions?.data_releases || [],
+    purge_config: sw.actions?.purge_config || null,
+    lockdown_config: sw.actions?.lockdown_config || null,
+    lockdown_executed: Boolean(sw.actions?.lockdown_executed),
+    lockdown_executed_at: sw.actions?.lockdown_executed_at || null,
   };
 
   return {
@@ -198,12 +197,6 @@ export async function getSwitchById(switchId) {
   };
 }
 
-
-/*
- * 3. UPDATE SWITCH
- * Updates metadata, interval, modular actions, and synchronized disclosure payloads
- * (including Google Drive file_metadata).
- */
 export async function updateSwitch(switchId, updatePayload) {
   const supabase = await createSupabaseServerClient();
 
@@ -216,7 +209,6 @@ export async function updateSwitch(switchId, updatePayload) {
     throw new Error("Unauthorized. Please log in to update this switch.");
   }
 
-  // 1. Verify switch ownership
   const { data: existing, error: fetchErr } = await supabase
     .from("switches")
     .select("id, usr_id, actions, check_in_interval, status")
@@ -228,7 +220,6 @@ export async function updateSwitch(switchId, updatePayload) {
     throw new Error("Target switch not found or access denied.");
   }
 
-  // 2. Sanitize countdown interval
   const sanitizedInterval = {
     months: Number(updatePayload.check_in_interval?.months ?? existing.check_in_interval?.months ?? 0),
     days: Number(updatePayload.check_in_interval?.days ?? existing.check_in_interval?.days ?? 0),
@@ -246,7 +237,6 @@ export async function updateSwitch(switchId, updatePayload) {
     throw new Error("Interval duration must be greater than zero minutes.");
   }
 
-  // 3. Merge actions and module flags
   const mergedActions = {
     ...existing.actions,
     ...updatePayload.actions,
@@ -254,9 +244,12 @@ export async function updateSwitch(switchId, updatePayload) {
       ...(existing.actions?.modules || {}),
       ...(updatePayload.actions?.modules || {}),
     },
+    lockdown_config:
+      updatePayload.actions?.lockdown_config !== undefined
+        ? updatePayload.actions.lockdown_config
+        : existing.actions?.lockdown_config || null,
   };
 
-  // 4. Update parent switch record
   const updateFields = {
     name: updatePayload.name?.trim(),
     criticality: updatePayload.criticality || "OPERATIONAL",
@@ -278,9 +271,8 @@ export async function updateSwitch(switchId, updatePayload) {
     throw new Error(updateErr.message);
   }
 
-  // 5. Synchronize Disclosures (info_to_release)
+  // Synchronize Disclosures
   if (Array.isArray(updatePayload.beacon_rows)) {
-    // Delete old disclosures for this switch
     const { error: deleteErr } = await supabase
       .from("info_to_release")
       .delete()
@@ -291,7 +283,6 @@ export async function updateSwitch(switchId, updatePayload) {
       throw new Error("Failed to clear previous disclosures.");
     }
 
-    // Insert updated disclosure rows if beacon module is enabled
     if (mergedActions.modules?.beacon && updatePayload.beacon_rows.length > 0) {
       const infoInserts = updatePayload.beacon_rows.map((row) => {
         const trustVal = Number(row.trust_required ?? 50);
@@ -322,21 +313,28 @@ export async function updateSwitch(switchId, updatePayload) {
   return updatedSwitch;
 }
 
-/**
- * 4. RE-ARM SWITCH
- * Resets a RESOLVED or EXHAUSTED switch back to 'ARMED', updates last_check_in to now,
- * and resets all linked switch_contacts back to 'pending'.
- */
-
 export async function rearmSwitch(switchId) {
   const supabase = await createSupabaseServerClient();
 
-  // 1. Reset parent switch
+  const { data: currentSw } = await supabase
+    .from("switches")
+    .select("actions, usr_id, name")
+    .eq("id", switchId)
+    .single();
+
+  // Reset execution flags so webhook can fire on next escalation
+  const resetActions = {
+    ...(currentSw?.actions || {}),
+    lockdown_executed: false,
+    lockdown_executed_at: null,
+  };
+
   const { data: sw, error: switchErr } = await supabase
     .from("switches")
     .update({
       status: "ARMED",
       last_check_in: new Date().toISOString(),
+      actions: resetActions,
     })
     .eq("id", switchId)
     .select()
@@ -346,7 +344,6 @@ export async function rearmSwitch(switchId) {
     throw new Error(`Failed to re-arm switch: ${switchErr.message}`);
   }
 
-  // 2. Reset contacts back to pending
   await supabase
     .from("switch_contacts")
     .update({
@@ -357,21 +354,19 @@ export async function rearmSwitch(switchId) {
     })
     .eq("switch_id", switchId);
 
-  // 3. Log re-arming event
   await supabase.from("escalation_logs").insert({
     usr_id: sw.usr_id,
     switch_id: switchId,
     event_type: "CHECKIN_PULSE",
     channel: "DASHBOARD",
     status: "SUCCESS",
-    details: `Operator manually re-armed switch ${sw.name}. Status reset to ARMED, contacts reset to pending.`,
+    details: `Operator manually re-armed switch ${sw.name}. Status reset to ARMED, contacts and lockdown flags reset.`,
   });
 
   revalidatePath(`/dashboard/switches/${switchId}`);
   revalidatePath("/dashboard/switches");
   return sw;
 }
-
 
 export async function removeSwitch(swId) {
   const supabase = await createSupabaseServerClient();
@@ -397,7 +392,6 @@ export async function removeSwitch(swId) {
   return { success: true };
 }
 
-
 export async function triggerHeartbeat() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -421,9 +415,6 @@ export async function triggerHeartbeat() {
   return { success: true };
 }
 
-/**
- * 6. Single Switch Check-In
- */
 export async function checkInSingleSwitch(swId) {
   const supabase = await createSupabaseServerClient();
   const {

@@ -1,13 +1,19 @@
 import { Resend } from "resend";
 import { getValidGoogleAccessToken, grantDriveFileAccess } from "./google-drive";
+import { executeLockdownWebhook } from "./webhooks";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Default wait window: 1 minute (adjust for production)
+// Wait window before escalating to next tier
 export const ACK_TIMEOUT_MS = 1 * 60 * 1000;
 
 export async function processSwitchEscalation(supabase, sw) {
   const switchId = sw.id;
+
+  // TRIGGER INFRASTRUCTURE LOCKDOWN (If configured and not yet executed)
+  if (sw.actions?.modules?.lockdown && !sw.actions?.lockdown_executed) {
+    await executeLockdownWebhook(supabase, sw);
+  }
 
   // 1. Fetch all linked contacts with their current status, priority, and trust ratings
   const { data: switchContacts, error: scErr } = await supabase
@@ -255,7 +261,7 @@ export async function processSwitchEscalation(supabase, sw) {
         })
         .eq("id", target.id);
 
-      // Log success
+      // Log dispatch
       await supabase.from("escalation_logs").insert({
         usr_id: sw.usr_id,
         switch_id: switchId,

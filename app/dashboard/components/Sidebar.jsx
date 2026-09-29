@@ -87,7 +87,7 @@ export default function Sidebar({ userEmail = "operator" }) {
               </Link>
             </div>
 
-            {/* Dock 2: Telemetry / Logs */}
+            {/* Dock 2: Telemetry / Logs / Vault */}
             <div className="sidebar-dock">
               <span className="dock-label">Telemetry</span>
 
@@ -105,6 +105,19 @@ export default function Sidebar({ userEmail = "operator" }) {
                   </svg>
                 </div>
                 <span className="item-label">Escalation Logs</span>
+              </Link>
+
+              <Link
+                href="/dashboard/drive"
+                className={`sidebar-item ${isNestedActive("/dashboard/drive") ? "is-active" : ""}`}
+                title="Drive Asset Vault"
+              >
+                <div className="item-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <span className="item-label">Your Files</span>
               </Link>
             </div>
           </nav>
