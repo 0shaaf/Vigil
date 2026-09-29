@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { getValidGoogleAccessToken, grantDriveFileAccess } from "./google-drive";
-import { executeLockdownWebhook } from "./webhook";
+import { executeLockdownWebhook } from "./webhooks";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -221,7 +221,7 @@ export async function processSwitchEscalation(supabase, sw) {
 
       // Send outbound email
       await resend.emails.send({
-        from: "Vigil Sentinel <onboarding@resend.dev>",
+        from: "Vigil Sentinel <sentinel@shaaf.me>",
         to: recipientEmail,
         subject: `[ACTION REQUIRED] Dead Man's Switch Triggered: ${sw.name}`,
         html: `
