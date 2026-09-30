@@ -1,0 +1,395 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap');
+
+:root {
+  --bg-pitch-dark: #000000;
+  --accent-teal: #40b3a2;
+  --flame-amber: #ff8800;
+  --flame-core: #ff4800;
+  
+  --text-white: #ffffff;
+  --text-muted: #8b92a4;
+  --border-dim: rgba(255, 255, 255, 0.08);
+
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Space Grotesk', sans-serif;
+}
+
+/* Strict Viewport Lock: Zero native browser scrollbars */
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden !important;
+  background-color: var(--bg-pitch-dark);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+.hero-root {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  background-color: var(--bg-pitch-dark);
+  color: var(--text-white);
+  font-family: var(--font-body);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================= 1. PITCH-DARK VOID ================= */
+.void-radial-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 75vw;
+  height: 55vh;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    circle, 
+    rgba(64, 179, 162, 0.06) 0%, 
+    rgba(255, 72, 0, 0.015) 45%, 
+    transparent 70%
+  );
+  filter: blur(80px);
+}
+
+.ember-deflect-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  transition: opacity 1s ease;
+}
+
+.canvas-dormant { opacity: 0; }
+.canvas-active { opacity: 1; }
+
+/* ================= 2. TRUE CENTERED HERO STAGE ================= */
+.hero-stage-container {
+  position: relative;
+  z-index: 10;
+  flex: 1;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;        /* Fixed: Vertical optical centering */
+  justify-content: center;   /* Fixed: Horizontal optical centering */
+  padding: 0 1.5rem;
+}
+
+.hero-content-center {
+  position: relative;
+  z-index: 25;
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: 0 auto;
+  opacity: 0;
+  transform: translateY(22px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Intro finished -> Show content */
+.intro-ready .hero-content-center {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Faded Out State (Desktop Step 3 / Mobile Zoom) */
+.hero-content-center.content-hidden {
+  opacity: 0 !important;
+  transform: translateY(-22px) scale(0.94) !important;
+  pointer-events: none !important;
+}
+
+.hero-headline {
+  font-family: var(--font-display);
+  font-size: clamp(1.85rem, 2.4vw, 2.3rem);
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  color: #fff;
+  margin: 0 0 clamp(1.8rem, 3.8vh, 2.6rem);
+}
+
+.flame-gradient-text {
+  background: linear-gradient(180deg, #ffffff 15%, #5ee5d2 65%, #40b3a2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px rgba(64, 179, 162, 0.35));
+}
+
+/* ================= 3. RIPPLE BUTTON COMPONENT ================= */
+.hero-cta-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-ripple-action {
+  outline: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--accent-teal);
+  min-width: 220px;
+  border: 0;
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  padding: 16px 24px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  text-decoration: none;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.btn-ripple-action:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(64, 179, 162, 0.4);
+}
+
+.btn-ripple-action .animation {
+  width: 6px;
+  height: 6px;
+  border-radius: 100%;
+  position: relative;
+  animation: ripple 0.6s linear infinite;
+}
+
+@keyframes ripple {
+  0% {
+    box-shadow: 
+      0 0 0 0 rgba(255, 255, 255, 0.1),
+      0 0 0 10px rgba(255, 255, 255, 0.1),
+      0 0 0 20px rgba(255, 255, 255, 0.1),
+      0 0 0 30px rgba(255, 255, 255, 0.1);
+  }
+  100% {
+    box-shadow: 
+      0 0 0 10px rgba(255, 255, 255, 0.1),
+      0 0 0 20px rgba(255, 255, 255, 0.1),
+      0 0 0 30px rgba(255, 255, 255, 0.1),
+      0 0 0 40px rgba(255, 255, 255, 0);
+  }
+}
+
+/* ================= 4. GLASSMORPHIC CARDS (.glass-card) ================= */
+.glass-card {
+  width: 240px;
+  min-height: 76px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 4px 2px rgba(255, 255, 255, 0.05);
+  position: absolute;
+  top: 0;
+  padding: 14px 18px;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(-50%);
+}
+
+/* Specular Surface Line Highlights */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+}
+
+.glass-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3));
+}
+
+.left-card {
+  right: 22px;
+  text-align: right;
+}
+
+.right-card {
+  left: 22px;
+  text-align: left;
+}
+
+.node-tag {
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--accent-teal);
+  display: block;
+}
+
+.node-title {
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0.2rem 0 0;
+  letter-spacing: 0.01em;
+}
+
+/* Details Hidden by Default; Expands Smoothly on Hover */
+.node-hover-details {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+}
+
+.node-desc {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin: 0.5rem 0 0;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(64, 179, 162, 0.45);
+  box-shadow: 
+    0 12px 36px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(64, 179, 162, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transform: translateY(-50%) scale(1.03);
+}
+
+.glass-card:hover .node-hover-details {
+  max-height: 90px;
+  opacity: 1;
+}
+
+/* ================= 5. HUD TELEMETRY & SCROLL CUES ================= */
+.hud-step-telemetry {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--accent-teal);
+  background: rgba(3, 3, 5, 0.65);
+  backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-dim);
+}
+
+.telemetry-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-teal);
+  box-shadow: 0 0 8px var(--accent-teal);
+}
+
+.scroll-step-cue {
+  margin-top: 2.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  opacity: 0.6;
+}
+
+.cue-line {
+  width: 1px;
+  height: 20px;
+  background: linear-gradient(180deg, var(--accent-teal), transparent);
+  animation: cueLineAnim 2s infinite ease-in-out;
+}
+
+@keyframes cueLineAnim {
+  0% { transform: scaleY(0); transform-origin: top; }
+  50% { transform: scaleY(1); transform-origin: top; }
+  51% { transform: scaleY(1); transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
+
+.cue-text {
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+
+/* ================= 6. RESPONSIVE HARD TOGGLES ================= */
+@media (min-width: 1024px) {
+  .engine-mobile-only {
+    display: none !important;
+  }
+  .engine-desktop-only {
+    display: block !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .engine-desktop-only {
+    display: none !important;
+  }
+  .engine-mobile-only {
+    display: block !important;
+  }
+  .hero-headline {
+    font-size: 1.65rem;
+  }
+  .hero-content-center {
+    max-width: 90vw;
+  }
+  .hud-step-telemetry {
+    top: 14px;
+    right: 14px;
+    font-size: 0.65rem;
+    padding: 6px 12px;
+  }
+}

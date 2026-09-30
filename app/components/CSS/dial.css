@@ -1,0 +1,303 @@
+/* ========================================================================= */
+/* RADIAL VAULT DIAL: FORMATION, ROTATION, AND 3.8X ARC ZOOM                 */
+/* ========================================================================= */
+
+:root {
+  --dial-radius: 175px;
+  --accent-teal: #40b3a2;
+  --teal-glow: rgba(64, 179, 162, 0.45);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.14);
+}
+
+.dial-stage-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Master Dial Frame: handles the massive zoom and downward displacement */
+.dial-camera-rig {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* State: Overview (Even steps: 0, 2, 4, 6, 8, 10) */
+.dial-camera-rig.view-overview {
+  transform: translate3d(0, 40px, 0) scale(1);
+}
+
+/* State: Zoomed Inspection (Odd steps: 1, 3, 5, 7, 9, 11)
+   Scales up 3.8x and pushes center down 540px so top node lands at y = ~25%
+   and the giant circular ring bleeds out of the screen */
+.dial-camera-rig.view-zoomed {
+  transform: translate3d(0, 560px, 0) scale(3.8);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --dial-radius: 140px;
+  }
+  .dial-camera-rig.view-overview {
+    transform: translate3d(0, 30px, 0) scale(0.95);
+  }
+  .dial-camera-rig.view-zoomed {
+    transform: translate3d(0, 460px, 0) scale(3.5);
+  }
+}
+
+/* The Rotating Turntable Ring */
+.dial-turntable {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The SVG Tether Ring */
+.dial-svg-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--dial-radius) * 2 + 80px);
+  height: calc(var(--dial-radius) * 2 + 80px);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.ring-circle-path {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1.4s ease, opacity 0.5s ease;
+}
+
+/* Central Yin-Yang Flare */
+.dial-center-halo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 110px;
+  height: 110px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(64, 179, 162, 0.25) 0%, transparent 70%);
+  filter: blur(14px);
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.5s ease;
+}
+
+/* Node Anchor Positioned Around the Circumference */
+.dial-node-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: auto;
+}
+
+/* Counter-Rotating Pivot: Keeps the cards and icons upright while the dial rotates */
+.node-counter-pivot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The Pip Marker */
+.node-pip-housing {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #000000;
+  border: 1.5px solid rgba(64, 179, 162, 0.45);
+  box-shadow: 0 0 12px rgba(64, 179, 162, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.pip-core-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-teal);
+  box-shadow: 0 0 8px var(--accent-teal);
+}
+
+/* Active Top Node Glowing State */
+.is-active-top .node-pip-housing {
+  border-color: #ffffff;
+  box-shadow: 0 0 20px var(--teal-glow), 0 0 35px var(--accent-teal);
+  transform: scale(1.25);
+}
+
+.is-active-top .pip-core-dot {
+  background: #ffffff;
+  box-shadow: 0 0 12px #ffffff;
+}
+
+/* ========================================================================= */
+/* GLASS CARD INSPECTION OVERLAY (Expands when zoomed in)                    */
+/* ========================================================================= */
+
+.node-glass-panel {
+  position: absolute;
+  top: 32px;
+  width: 260px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.85) translateY(-10px);
+  transform-origin: top center;
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  z-index: 20;
+}
+
+/* Specular Highlights */
+.node-glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+}
+
+/* Show only when this node is the active zoomed-in node */
+.view-zoomed .is-active-top .node-glass-panel {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+  /* Counteract camera rig 3.8x scale so text remains sharp & human-readable */
+  transform: scale(0.28) translateY(-40px);
+  width: 580px;
+  padding: 32px 40px;
+  border-radius: 28px;
+}
+
+@media (max-width: 768px) {
+  .view-zoomed .is-active-top .node-glass-panel {
+    width: 480px;
+    padding: 24px 28px;
+    transform: scale(0.32) translateY(-25px);
+  }
+}
+
+.card-tag {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--accent-teal);
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.75rem;
+}
+
+.card-desc {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin: 0 0 1.25rem;
+}
+
+.card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
+  background: rgba(64, 179, 162, 0.12);
+  border: 1px solid rgba(64, 179, 162, 0.3);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #5ee5d2;
+}
+
+/* Small Title Label under pips during Overview */
+.overview-pip-label {
+  position: absolute;
+  top: 24px;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0.7;
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.view-zoomed .overview-pip-label {
+  opacity: 0 !important;
+}
+
+/* ========================================================================= */
+/* INTRO FORMATION SEQUENCE: YIN-YANG TO 6-NODE DIAL                         */
+/* ========================================================================= */
+
+.dial-stage-wrapper.intro-playing .dial-svg-ring {
+  opacity: 0;
+}
+
+.dial-stage-wrapper.intro-playing .dial-node-anchor {
+  animation: introMitosisScatter 2.8s cubic-bezier(0.16, 1, 0.3, 1) 1.2s forwards;
+}
+
+.dial-stage-wrapper.intro-playing .ring-circle-path {
+  stroke-dashoffset: 1200;
+  animation: drawRingIn 1.5s ease 2.2s forwards;
+}
+
+@keyframes drawRingIn {
+  to { stroke-dashoffset: 0; }
+}

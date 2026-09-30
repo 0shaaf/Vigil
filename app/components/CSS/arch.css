@@ -1,0 +1,221 @@
+/* ========================================================================= */
+/* DESKTOP ARCH MITOSIS ENGINE (VISIBLE AT >= 1024px)                        */
+/* ========================================================================= */
+
+.arch-animation-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 12;
+}
+
+.arch-canvas-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1200px;
+  height: 600px;
+}
+
+.orbit-rotor {
+  position: absolute;
+  top: 300px;
+  left: 600px;
+  width: 0;
+  height: 0;
+}
+
+.parent-carrier {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+}
+
+.node-pip-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.node-pip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(64, 179, 162, 0.45);
+  background: #080203;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(64, 179, 162, 0.25);
+  transition: transform 0.3s ease;
+  pointer-events: auto;
+}
+
+.pip-core {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-teal);
+  box-shadow: 0 0 8px var(--accent-teal);
+}
+
+.mitosis-pulse-ring {
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent-teal);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.daughter-node {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+}
+
+.arch-strings-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.arch-svg-path {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+}
+
+/* ================= DESKTOP INTRO SEQUENCE (~6.8s) ================= */
+.intro-running .orbit-rotor {
+  animation: rotorDualOrbit 3.4s cubic-bezier(0.42, 0, 0.18, 1) 0.8s forwards;
+}
+
+@keyframes rotorDualOrbit {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(720deg); }
+}
+
+.intro-running .left-carrier {
+  animation: leftCarrierIntro 5.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+@keyframes leftCarrierIntro {
+  0% { transform: translateX(0px) scale(0); opacity: 0; }
+  10% { transform: translateX(-48px) scale(1); opacity: 1; }
+  62% { transform: translateX(-48px) scale(1); opacity: 1; }
+  88%, 100% { transform: translateX(-480px) scale(1); opacity: 1; }
+}
+
+.intro-running .right-carrier {
+  animation: rightCarrierIntro 5.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+@keyframes rightCarrierIntro {
+  0% { transform: translateX(0px) scale(0); opacity: 0; }
+  10% { transform: translateX(48px) scale(1); opacity: 1; }
+  62% { transform: translateX(48px) scale(1); opacity: 1; }
+  88%, 100% { transform: translateX(480px) scale(1); opacity: 1; }
+}
+
+.intro-running .mitosis-pulse-ring {
+  animation: emitShockwave 1s cubic-bezier(0.1, 0.8, 0.2, 1) 4.6s forwards;
+}
+
+@keyframes emitShockwave {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(3.8); opacity: 0; }
+}
+
+.intro-running .l1-daughter { animation: sproutL1 1.4s cubic-bezier(0.18, 0.89, 0.32, 1.25) 4.8s forwards; }
+.intro-running .l3-daughter { animation: sproutL3 1.4s cubic-bezier(0.18, 0.89, 0.32, 1.25) 4.8s forwards; }
+.intro-running .r1-daughter { animation: sproutR1 1.4s cubic-bezier(0.18, 0.89, 0.32, 1.25) 4.8s forwards; }
+.intro-running .r3-daughter { animation: sproutR3 1.4s cubic-bezier(0.18, 0.89, 0.32, 1.25) 4.8s forwards; }
+
+@keyframes sproutL1 { 0% { transform: translate(0, 0) scale(0); opacity: 0; } 100% { transform: translate(100px, -170px) scale(1); opacity: 1; } }
+@keyframes sproutL3 { 0% { transform: translate(0, 0) scale(0); opacity: 0; } 100% { transform: translate(100px, 170px) scale(1); opacity: 1; } }
+@keyframes sproutR1 { 0% { transform: translate(0, 0) scale(0); opacity: 0; } 100% { transform: translate(-100px, -170px) scale(1); opacity: 1; } }
+@keyframes sproutR3 { 0% { transform: translate(0, 0) scale(0); opacity: 0; } 100% { transform: translate(-100px, 170px) scale(1); opacity: 1; } }
+
+.intro-running .arch-svg-path {
+  animation: drawStringsIntro 1.4s cubic-bezier(0.16, 1, 0.3, 1) 5.6s forwards;
+}
+
+@keyframes drawStringsIntro {
+  to { stroke-dashoffset: 0; }
+}
+
+.intro-running .glass-card {
+  opacity: 0;
+  animation: cardFadeInIntro 0.9s cubic-bezier(0.16, 1, 0.3, 1) 6.0s forwards;
+}
+
+@keyframes cardFadeInIntro {
+  to { opacity: 1; }
+}
+
+/* ================= DESKTOP STEP-DRIVEN TRANSITIONS ================= */
+.step-mode .parent-carrier {
+  transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.75s ease;
+}
+
+.step-mode .daughter-node {
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.55s ease;
+}
+
+.step-mode .glass-card {
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* STEP 0: FULL ASSEMBLED ARCH */
+.step-mode.step-0 .left-carrier { transform: translateX(-480px) scale(1); opacity: 1; }
+.step-mode.step-0 .right-carrier { transform: translateX(480px) scale(1); opacity: 1; }
+.step-mode.step-0 .l1-daughter { transform: translate(100px, -170px) scale(1); opacity: 1; }
+.step-mode.step-0 .l3-daughter { transform: translate(100px, 170px) scale(1); opacity: 1; }
+.step-mode.step-0 .r1-daughter { transform: translate(-100px, -170px) scale(1); opacity: 1; }
+.step-mode.step-0 .r3-daughter { transform: translate(-100px, 170px) scale(1); opacity: 1; }
+.step-mode.step-0 .arch-svg-path { stroke-dashoffset: 0; opacity: 1; }
+.step-mode.step-0 .glass-card { opacity: 1; pointer-events: auto; }
+
+/* STEP 1: DAUGHTERS COLLAPSE INTO PARENTS */
+.step-mode.step-1 .l1-daughter,
+.step-mode.step-1 .l3-daughter,
+.step-mode.step-1 .r1-daughter,
+.step-mode.step-1 .r3-daughter {
+  transform: translate(0px, 0px) scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+.step-mode.step-1 .arch-svg-path { stroke-dashoffset: 600; opacity: 0; }
+.step-mode.step-1 .glass-card { opacity: 0; transform: translateY(-50%) scale(0.6); pointer-events: none; }
+.step-mode.step-1 .left-carrier { transform: translateX(-480px) scale(1); opacity: 1; }
+.step-mode.step-1 .right-carrier { transform: translateX(480px) scale(1); opacity: 1; }
+
+/* STEP 2: PARENTS MOVE INWARD TO CENTER & FADE OUT */
+.step-mode.step-2 .l1-daughter,
+.step-mode.step-2 .l3-daughter,
+.step-mode.step-2 .r1-daughter,
+.step-mode.step-2 .r3-daughter { transform: translate(0px, 0px) scale(0); opacity: 0; }
+.step-mode.step-2 .arch-svg-path { stroke-dashoffset: 600; opacity: 0; }
+.step-mode.step-2 .glass-card { opacity: 0; }
+.step-mode.step-2 .left-carrier { transform: translateX(0px) scale(0); opacity: 0; }
+.step-mode.step-2 .right-carrier { transform: translateX(0px) scale(0); opacity: 0; }
+
+/* STEP 3: ALL ARCH ELEMENTS DORMANT */
+.step-mode.step-3 .left-carrier,
+.step-mode.step-3 .right-carrier { transform: translateX(0px) scale(0); opacity: 0; }
+.step-mode.step-3 .daughter-node { transform: translate(0px, 0px) scale(0); opacity: 0; }
+.step-mode.step-3 .arch-svg-path { stroke-dashoffset: 600; opacity: 0; }
+.step-mode.step-3 .glass-card { opacity: 0; }

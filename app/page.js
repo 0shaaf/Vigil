@@ -4,39 +4,96 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import EmberStormCanvas from './components/landing/EmberStormCanvas';
 import ArchNodes from './components/landing/ArchNodes';
-import './hero.css';
+import RadialVaultDial from './components/landing/RadialVaultDial';
+import SceneTwo from './components/landing/SceneTwo';
+import './components/CSS/hero.css';
+import './components/CSS/arch.css';
+import './components/CSS/dial.css';
 
 export default function LandingPage() {
-  // scrollStep: 0 (Full Hero) | 1 (Daughters In) | 2 (Parents In) | 3 (Text Faded)
-  const [scrollStep, setScrollStep] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const [isIntroDone, setIsIntroDone] = useState(false);
+  
+  // Desktop Steps: 0 (Full Arch) -> 1 (Daughters In) -> 2 (Parents In) -> 3 (Text Faded)
+  const [desktopStep, setDesktopStep] = useState(0);
+
+  // Mobile Steps: 0 to 12 (0: Overview, 1: Node 0 Zoom, 2: Rotate Node 1, 3: Node 1 Zoom ... 12: Scene 2)
+  const [mobileStep, setMobileStep] = useState(0);
+
   const isCooldownRef = useRef(false);
   const touchStartY = useRef(0);
 
+  // 1. Detect Viewport on Mount & Resize
   useEffect(() => {
-    const handleWheel = (e) => {
+    const checkViewport = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+
+    checkViewport();
+    window.addEventListener('resize', checkViewport);
+    return () => window.removeEventListener('resize', checkViewport);
+  }, []);
+
+  // 2. Intro Formation Timer
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setIsIntroDone(true);
+    }, isMobile ? 3200 : 6800);
+
+    return () => clearTimeout(t);
+  }, [isMobile]);
+
+  // Active node on mobile zoom
+  const mobileActiveNodeIndex = Math.min(5, Math.floor(mobileStep / 2));
+  const mobileIsZoomed = mobileStep % 2 === 1 && mobileStep < 12;
+
+  // 3. Unified Virtual Scroll Machine
+  useEffect(() => {
+    const handleScrollForward = () => {
       if (!isIntroDone || isCooldownRef.current) return;
 
-      if (e.deltaY > 25) {
-        // Scroll Down: advance step up to 3
-        setScrollStep((prev) => {
-          if (prev < 3) {
+      if (isMobile) {
+        // Mobile sequence (0 -> 12)
+        setMobileStep((prev) => {
+          if (prev < 12) {
             isCooldownRef.current = true;
-            setTimeout(() => {
-              isCooldownRef.current = false;
-            }, 650);
+            setTimeout(() => { isCooldownRef.current = false; }, 600);
             return prev + 1;
           }
           return prev;
         });
-      } else if (e.deltaY < -25) {
-        // Scroll Up: reverse step down to 0
-        setScrollStep((prev) => {
+      } else {
+        // Desktop sequence (0 -> 3)
+        setDesktopStep((prev) => {
+          if (prev < 3) {
+            isCooldownRef.current = true;
+            setTimeout(() => { isCooldownRef.current = false; }, 650);
+            return prev + 1;
+          }
+          return prev;
+        });
+      }
+    };
+
+    const handleScrollBackward = () => {
+      if (!isIntroDone || isCooldownRef.current) return;
+
+      if (isMobile) {
+        // Mobile reverse (12 -> 0)
+        setMobileStep((prev) => {
           if (prev > 0) {
             isCooldownRef.current = true;
-            setTimeout(() => {
-              isCooldownRef.current = false;
-            }, 650);
+            setTimeout(() => { isCooldownRef.current = false; }, 600);
+            return prev - 1;
+          }
+          return prev;
+        });
+      } else {
+        // Desktop reverse (3 -> 0)
+        setDesktopStep((prev) => {
+          if (prev > 0) {
+            isCooldownRef.current = true;
+            setTimeout(() => { isCooldownRef.current = false; }, 650);
             return prev - 1;
           }
           return prev;
@@ -44,73 +101,94 @@ export default function LandingPage() {
       }
     };
 
-    const handleTouchStart = (e) => {
+    const onWheel = (e) => {
+      if (e.deltaY > 25) handleScrollForward();
+      else if (e.deltaY < -25) handleScrollBackward();
+    };
+
+    const onTouchStart = (e) => {
       touchStartY.current = e.touches[0].clientY;
     };
 
-    const handleTouchMove = (e) => {
-      if (!isIntroDone || isCooldownRef.current) return;
+    const onTouchMove = (e) => {
       const deltaY = touchStartY.current - e.touches[0].clientY;
-
-      if (deltaY > 40) {
-        setScrollStep((prev) => {
-          if (prev < 3) {
-            isCooldownRef.current = true;
-            setTimeout(() => {
-              isCooldownRef.current = false;
-            }, 650);
-            return prev + 1;
-          }
-          return prev;
-        });
-      } else if (deltaY < -40) {
-        setScrollStep((prev) => {
-          if (prev > 0) {
-            isCooldownRef.current = true;
-            setTimeout(() => {
-              isCooldownRef.current = false;
-            }, 650);
-            return prev - 1;
-          }
-          return prev;
-        });
-      }
+      if (deltaY > 35) handleScrollForward();
+      else if (deltaY < -35) handleScrollBackward();
     };
 
-    window.addEventListener('wheel', handleWheel, { passive: true });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('wheel', onWheel, { passive: true });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
 
     return () => {
-      window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
     };
-  }, [isIntroDone]);
+  }, [isIntroDone, isMobile]);
+
+  // Determine content visibility based on current view
+  const isContentHidden = isMobile ? mobileStep > 0 : desktopStep === 3;
 
   return (
     <div
       className={`hero-root ${
-        isIntroDone ? `intro-ready scroll-step-${scrollStep}` : 'intro-playing'
+        isIntroDone
+          ? isMobile
+            ? `mobile-active mobile-step-${mobileStep}`
+            : `desktop-active desktop-step-${desktopStep}`
+          : 'intro-playing'
       }`}
     >
-      {/* Background Ember Storm: Active only until everything fades out at Step 3 */}
-      <EmberStormCanvas active={isIntroDone && scrollStep < 3} />
+      {/* HUD Telemetry Indicator */}
+      <div className="hud-step-telemetry">
+        <span className="telemetry-live-dot" />
+        <span>
+          {isMobile
+            ? mobileStep === 12
+              ? 'SECTION 02 // ARCHITECTURE'
+              : mobileIsZoomed
+              ? `MOBILE INSPECTION // NODE 0${mobileActiveNodeIndex + 1}`
+              : `MOBILE VAULT DIAL // ALIGNED 0${mobileActiveNodeIndex + 1}`
+            : desktopStep === 0
+            ? 'FAILSAFE ACTIVE // ALL NODES LINKED'
+            : desktopStep === 1
+            ? 'STEP 01 // DAUGHTER NODES COLLAPSED'
+            : desktopStep === 2
+            ? 'STEP 02 // PARENTS RETRACTED'
+            : 'STEP 03 // VOID REVEALED'}
+        </span>
+      </div>
 
-      {/* Pure Void Pitch-Dark Ambient Base */}
+      {/* Ember Storm Canvas: Active while viewing hero sections */}
+      <EmberStormCanvas
+        active={isIntroDone && (isMobile ? mobileStep < 12 : desktopStep < 3)}
+      />
+
+      {/* Pitch-Dark Ambient Radial Glow */}
       <div className="void-radial-glow" aria-hidden="true" />
 
-      {/* Main Centered Stage */}
-      <main className="hero-stage-container">
-        {/* Step-Driven Arch Mitosis */}
+      {/* ================= DESKTOP ENGINE (>= 1024px) ================= */}
+      <div className="engine-desktop-only">
         <ArchNodes
-          scrollStep={scrollStep}
+          scrollStep={desktopStep}
           isIntroDone={isIntroDone}
           onIntroFinish={() => setIsIntroDone(true)}
         />
+      </div>
 
-        {/* Central Core: Fades out smoothly at Step 3 */}
-        <div className={`hero-content-center ${scrollStep === 3 ? 'content-hidden' : ''}`}>
+      {/* ================= MOBILE ENGINE (< 1024px) ================= */}
+      <div className="engine-mobile-only">
+        <RadialVaultDial
+          activeNodeIndex={mobileActiveNodeIndex}
+          isZoomed={mobileIsZoomed}
+          isIntroDone={isIntroDone}
+        />
+      </div>
+
+      {/* ================= CENTER FOREGROUND CONTENT ================= */}
+      <main className="hero-stage-container">
+        <div className={`hero-content-center ${isContentHidden ? 'content-hidden' : ''}`}>
           <h1 className="hero-headline">
             Get help when <br />
             <span className="flame-gradient-text">no one knows you need it.</span>
@@ -124,18 +202,31 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Dynamic Scroll Cue based on current step */}
           <div className="scroll-step-cue">
             <span className="cue-line" />
             <span className="cue-text">
-              {scrollStep === 0 && 'SCROLL TO DISMANTLE'}
-              {scrollStep === 1 && 'SCROLL FOR SINGULARITY'}
-              {scrollStep === 2 && 'SCROLL TO FADE'}
-              {scrollStep === 3 && '↑ SCROLL UP TO RESTORE'}
+              {isMobile
+                ? mobileStep === 0
+                  ? 'SCROLL TO INSPECT DIAL'
+                  : mobileStep < 12
+                  ? mobileIsZoomed
+                    ? 'SCROLL TO ADVANCE'
+                    : 'SCROLL TO ZOOM'
+                  : '↑ SCROLL UP TO RETURN'
+                : desktopStep === 0
+                ? 'SCROLL TO DISMANTLE'
+                : desktopStep === 1
+                ? 'SCROLL FOR SINGULARITY'
+                : desktopStep === 2
+                ? 'SCROLL TO FADE'
+                : '↑ SCROLL UP TO RESTORE'}
             </span>
           </div>
         </div>
       </main>
+
+      {/* Scene Two: Unlocks when user scrolls past all nodes on mobile */}
+      {isMobile && <SceneTwo active={mobileStep === 12} />}
     </div>
   );
 }
