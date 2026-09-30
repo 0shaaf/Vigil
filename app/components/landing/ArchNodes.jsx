@@ -35,15 +35,15 @@ const NODE_DATA = {
   },
 };
 
-export default function ArchNodes({ scrollStep, isIntroDone, onIntroFinish }) {
+export default function ArchNodes({ scrollStep, onIntroFinish }) {
   const [introRunning, setIntroRunning] = useState(true);
 
   useEffect(() => {
-    // Initial choreographed intro: ~6.8s
+    // 7.0s: Exact completion timestamp of orbital spin -> mitosis -> string draws -> card fade
     const tIntro = setTimeout(() => {
       setIntroRunning(false);
       if (onIntroFinish) onIntroFinish();
-    }, 6800);
+    }, 7000);
 
     return () => clearTimeout(tIntro);
   }, [onIntroFinish]);

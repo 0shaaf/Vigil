@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import '../CSS/dial.css';
 
 const NODES = [
@@ -48,12 +48,17 @@ const NODES = [
   },
 ];
 
-export default function RadialVaultDial({ activeNodeIndex, isZoomed, isIntroDone }) {
-  // Radius of the resting ring (175px desktop)
+export default function RadialVaultDial({ activeNodeIndex, isZoomed, onIntroFinish }) {
   const RADIUS = 175;
 
-  // The angle each node sits on the circle:
-  // Node 0 sits at -90deg (12 o'clock top), Node 1 at -30deg (2 o'clock), etc.
+  useEffect(() => {
+    // 3.0s: Mobile dial formation duration
+    const t = setTimeout(() => {
+      if (onIntroFinish) onIntroFinish();
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [onIntroFinish]);
+
   const nodePositions = useMemo(() => {
     return NODES.map((node, i) => {
       const angleDeg = i * 60 - 90;
@@ -67,20 +72,15 @@ export default function RadialVaultDial({ activeNodeIndex, isZoomed, isIntroDone
     });
   }, [RADIUS]);
 
-  // To bring activeNodeIndex to 12 o'clock (-90deg), rotate dial by -activeNodeIndex * 60deg
   const turntableRotation = -(activeNodeIndex * 60);
 
   return (
-    <div className={`dial-stage-wrapper ${isIntroDone ? 'intro-settled' : 'intro-playing'}`}>
-      {/* Camera Rig: Handles the 3.8x zoom & downward translation */}
+    <div className="dial-stage-wrapper">
       <div className={`dial-camera-rig ${isZoomed ? 'view-zoomed' : 'view-overview'}`}>
-        
-        {/* The Turntable: Rotates 60deg each step to park the next node at 12 o'clock */}
         <div
           className="dial-turntable"
           style={{ transform: `rotate(${turntableRotation}deg)` }}
         >
-          {/* SVG Circular Ring Arc */}
           <svg className="dial-svg-ring" viewBox="0 0 450 450" fill="none">
             <defs>
               <linearGradient id="ringGlowTeal" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -100,10 +100,8 @@ export default function RadialVaultDial({ activeNodeIndex, isZoomed, isIntroDone
             />
           </svg>
 
-          {/* Central Radial Halo */}
           <div className="dial-center-halo" />
 
-          {/* 6 Nodes Positioned around the circle */}
           {nodePositions.map((node) => {
             const isCurrentActive = node.id === activeNodeIndex;
 
@@ -115,22 +113,18 @@ export default function RadialVaultDial({ activeNodeIndex, isZoomed, isIntroDone
                   transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
                 }}
               >
-                {/* Counter-Rotate so card & pips remain upright */}
                 <div
                   className="node-counter-pivot"
                   style={{
                     transform: `rotate(${-turntableRotation}deg)`,
                   }}
                 >
-                  {/* Pip Marker */}
                   <div className="node-pip-housing">
                     <span className="pip-core-dot" />
                   </div>
 
-                  {/* Overview Minimal Label */}
                   <span className="overview-pip-label">{node.tag}</span>
 
-                  {/* Inspection Glass Card: Expands only on active zoomed node */}
                   <div className="node-glass-panel">
                     <span className="card-tag">{node.tag}</span>
                     <h3 className="card-title">{node.title}</h3>

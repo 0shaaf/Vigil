@@ -70,7 +70,7 @@ html, body {
   z-index: 5;
   pointer-events: none;
   mix-blend-mode: screen;
-  transition: opacity 1s ease;
+  transition: opacity 1.2s ease;
 }
 
 .canvas-dormant { opacity: 0; }
@@ -79,45 +79,51 @@ html, body {
 /* ================= 2. TRUE CENTERED HERO STAGE ================= */
 .hero-stage-container {
   position: relative;
-  z-index: 10;
+  z-index: 20;
   flex: 1;
   width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   max-width: 1440px;
   margin: 0 auto;
   display: flex;
-  align-items: center;        /* Fixed: Vertical optical centering */
-  justify-content: center;   /* Fixed: Horizontal optical centering */
+  align-items: center;        /* True vertical centering */
+  justify-content: center;   /* True horizontal centering */
   padding: 0 1.5rem;
 }
 
+/* Strictly HIDDEN during the entire mitosis intro sequence */
 .hero-content-center {
   position: relative;
-  z-index: 25;
+  z-index: 30;
   width: 100%;
-  max-width: 540px;
+  max-width: 560px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
   margin: 0 auto;
   opacity: 0;
-  transform: translateY(22px) scale(0.96);
+  transform: translateY(26px) scale(0.96);
   pointer-events: none;
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Intro finished -> Show content */
-.intro-ready .hero-content-center {
+/* FADES IN ONLY WHEN THE MITOSIS INTRO HAS FINISHED */
+.hero-root.intro-ready .hero-content-center {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
 }
 
-/* Faded Out State (Desktop Step 3 / Mobile Zoom) */
-.hero-content-center.content-hidden {
+/* Fades Out when user scrolls down to Step 3 (or zooms into node on mobile) */
+.hero-root.intro-ready .hero-content-center.content-hidden {
   opacity: 0 !important;
   transform: translateY(-22px) scale(0.94) !important;
   pointer-events: none !important;
+  transition: opacity 0.6s ease, transform 0.6s ease;
 }
 
 .hero-headline {
@@ -224,7 +230,6 @@ html, body {
   transform: translateY(-50%);
 }
 
-/* Specular Surface Line Highlights */
 .glass-card::before {
   content: '';
   position: absolute;
@@ -245,15 +250,8 @@ html, body {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3));
 }
 
-.left-card {
-  right: 22px;
-  text-align: right;
-}
-
-.right-card {
-  left: 22px;
-  text-align: left;
-}
+.left-card { right: 22px; text-align: right; }
+.right-card { left: 22px; text-align: left; }
 
 .node-tag {
   font-family: var(--font-body);
@@ -273,7 +271,6 @@ html, body {
   letter-spacing: 0.01em;
 }
 
-/* Details Hidden by Default; Expands Smoothly on Hover */
 .node-hover-details {
   max-height: 0;
   opacity: 0;

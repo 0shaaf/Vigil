@@ -17,13 +17,13 @@ export default function LandingPage() {
   // Desktop Steps: 0 (Full Arch) -> 1 (Daughters In) -> 2 (Parents In) -> 3 (Text Faded)
   const [desktopStep, setDesktopStep] = useState(0);
 
-  // Mobile Steps: 0 to 12 (0: Overview, 1: Node 0 Zoom, 2: Rotate Node 1, 3: Node 1 Zoom ... 12: Scene 2)
+  // Mobile Steps: 0 to 12 (0: Overview, 1: Node 0 Zoom ... 12: Scene 2)
   const [mobileStep, setMobileStep] = useState(0);
 
   const isCooldownRef = useRef(false);
   const touchStartY = useRef(0);
 
-  // 1. Detect Viewport on Mount & Resize
+  // Detect Viewport on Mount & Resize
   useEffect(() => {
     const checkViewport = () => {
       setIsMobile(window.innerWidth < 1024);
@@ -34,26 +34,15 @@ export default function LandingPage() {
     return () => window.removeEventListener('resize', checkViewport);
   }, []);
 
-  // 2. Intro Formation Timer
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setIsIntroDone(true);
-    }, isMobile ? 3200 : 6800);
-
-    return () => clearTimeout(t);
-  }, [isMobile]);
-
-  // Active node on mobile zoom
   const mobileActiveNodeIndex = Math.min(5, Math.floor(mobileStep / 2));
   const mobileIsZoomed = mobileStep % 2 === 1 && mobileStep < 12;
 
-  // 3. Unified Virtual Scroll Machine
+  // Virtual Scroll Engine
   useEffect(() => {
     const handleScrollForward = () => {
       if (!isIntroDone || isCooldownRef.current) return;
 
       if (isMobile) {
-        // Mobile sequence (0 -> 12)
         setMobileStep((prev) => {
           if (prev < 12) {
             isCooldownRef.current = true;
@@ -63,7 +52,6 @@ export default function LandingPage() {
           return prev;
         });
       } else {
-        // Desktop sequence (0 -> 3)
         setDesktopStep((prev) => {
           if (prev < 3) {
             isCooldownRef.current = true;
@@ -79,7 +67,6 @@ export default function LandingPage() {
       if (!isIntroDone || isCooldownRef.current) return;
 
       if (isMobile) {
-        // Mobile reverse (12 -> 0)
         setMobileStep((prev) => {
           if (prev > 0) {
             isCooldownRef.current = true;
@@ -89,7 +76,6 @@ export default function LandingPage() {
           return prev;
         });
       } else {
-        // Desktop reverse (3 -> 0)
         setDesktopStep((prev) => {
           if (prev > 0) {
             isCooldownRef.current = true;
@@ -133,18 +119,20 @@ export default function LandingPage() {
   return (
     <div
       className={`hero-root ${
-        isIntroDone
-          ? isMobile
-            ? `mobile-active mobile-step-${mobileStep}`
-            : `desktop-active desktop-step-${desktopStep}`
-          : 'intro-playing'
+        isIntroDone ? 'intro-ready' : 'intro-playing'
+      } ${
+        isMobile
+          ? `platform-mobile mobile-step-${mobileStep}`
+          : `platform-desktop desktop-step-${desktopStep}`
       }`}
     >
       {/* HUD Telemetry Indicator */}
       <div className="hud-step-telemetry">
         <span className="telemetry-live-dot" />
         <span>
-          {isMobile
+          {!isIntroDone
+            ? 'INITIALIZING // FAILSAFE DAEMON'
+            : isMobile
             ? mobileStep === 12
               ? 'SECTION 02 // ARCHITECTURE'
               : mobileIsZoomed
@@ -160,7 +148,7 @@ export default function LandingPage() {
         </span>
       </div>
 
-      {/* Ember Storm Canvas: Active while viewing hero sections */}
+      {/* Ember Storm Canvas: Active once intro completes and until final section */}
       <EmberStormCanvas
         active={isIntroDone && (isMobile ? mobileStep < 12 : desktopStep < 3)}
       />
@@ -172,7 +160,6 @@ export default function LandingPage() {
       <div className="engine-desktop-only">
         <ArchNodes
           scrollStep={desktopStep}
-          isIntroDone={isIntroDone}
           onIntroFinish={() => setIsIntroDone(true)}
         />
       </div>
@@ -182,7 +169,7 @@ export default function LandingPage() {
         <RadialVaultDial
           activeNodeIndex={mobileActiveNodeIndex}
           isZoomed={mobileIsZoomed}
-          isIntroDone={isIntroDone}
+          onIntroFinish={() => setIsIntroDone(true)}
         />
       </div>
 
