@@ -5,7 +5,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createSwitch } from "@/app/actions/switches";
-import GoogleDrivePickerModal from "@/app/compontents/GoogleDrivePickerModal";
+import GoogleDrivePickerModal from "@/app/components/GoogleDrivePickerModal";
 import "../css/switch-form.css";
 
 export default function CreateSwitchForm({ availableContacts = [] }) {

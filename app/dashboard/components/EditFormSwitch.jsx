@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { updateSwitch } from "@/app/actions/switches";
-import GoogleDrivePickerModal from "@/app/compontents/GoogleDrivePickerModal";
+import GoogleDrivePickerModal from "@/app/components/GoogleDrivePickerModal";
 
 export default function EditFormSwitch({ initialSwitch, availableContacts = [] }) {
   const router = useRouter();
