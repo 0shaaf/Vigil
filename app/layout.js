@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Vigil — Automated Check-In & Safety Sentinel",
+  title: "Vigil – Automated Check-In & Safety Sentinel",
   description: "When you go silent, Vigil speaks for you. Automated dead man's switch for lone workers, family care, and critical infrastructure.",
   icons: {
     icon: [
