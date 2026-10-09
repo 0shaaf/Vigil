@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Radio, Lock, Activity, Pause, Play, RefreshCw, ArrowUpRight } from "lucide-react";
-import { checkInSingleSwitch, rearmSwitch } from "@/app/actions/switches";
+import { Radio, Lock, Activity, ArrowUpRight, Trash2 } from "lucide-react";
+import { checkInSingleSwitch, rearmSwitch, removeSwitch } from "@/app/actions/switches";
 import "../css/switch-card.css";
 
 function calculateTimeLeft(lastCheckIn, interval) {
@@ -34,6 +34,9 @@ export default function SwitchCard({ switchData }) {
   const router = useRouter();
   const [pulseLoading, setPulseLoading] = useState(false);
   const [pulseSuccess, setPulseSuccess] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [countdown, setCountdown] = useState(() =>
     calculateTimeLeft(switchData.last_check_in, switchData.check_in_interval)
   );
@@ -64,6 +67,27 @@ export default function SwitchCard({ switchData }) {
       console.error("[SwitchCard Pulse Error]:", err);
     } finally {
       setPulseLoading(false);
+    }
+  };
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      const res = await removeSwitch(switchData.id);
+      if (res?.error) {
+        setDeleteError(res.error);
+        setDeleting(false);
+      } else {
+        setShowDeleteModal(false);
+        router.refresh();
+      }
+    } catch (err) {
+      setDeleteError(err?.message || "Failed to delete switch");
+      setDeleting(false);
     }
   };
 
@@ -181,6 +205,20 @@ export default function SwitchCard({ switchData }) {
               </span>
             </button>
 
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowDeleteModal(true);
+              }}
+              className="btn-card-delete"
+              title="Delete Switch"
+              aria-label="Delete Switch"
+            >
+              <Trash2 size={13} />
+            </button>
+
             <Link
               href={`/dashboard/switches/${switchData.id}`}
               className="btn-card-configure"
@@ -191,6 +229,48 @@ export default function SwitchCard({ switchData }) {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div
+          className="switch-delete-modal-backdrop"
+          onClick={() => !deleting && setShowDeleteModal(false)}
+        >
+          <div
+            className="switch-delete-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="delete-modal-icon-wrap">
+              <Trash2 size={22} />
+            </div>
+            <h3 className="delete-modal-title">Delete Switch</h3>
+            <p className="delete-modal-desc">
+              Are you sure you want to permanently delete <strong>{switchData.name}</strong>? All linked intervals, audit links, and emergency triggers will be permanently disarmed.
+            </p>
+            {deleteError && (
+              <div className="delete-modal-error">{deleteError}</div>
+            )}
+            <div className="delete-modal-actions">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setShowDeleteModal(false)}
+                className="btn-delete-cancel"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleDelete}
+                className="btn-delete-confirm"
+              >
+                {deleting ? "Deleting..." : "Permanently Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

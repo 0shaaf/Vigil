@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+import { Check } from "lucide-react";
 import "./reset-password.css";
 
 const supabase = createClient(
@@ -115,7 +116,9 @@ export default function ResetPasswordPage() {
 
         {success ? (
           <div className="reset-success-box">
-            <div className="success-glyph">✓</div>
+            <div className="success-glyph" style={{ display: "flex", justifyContent: "center" }}>
+              <Check size={28} />
+            </div>
             <h2 className="success-title">Credentials Updated</h2>
             <p className="success-desc">
               Your password has been successfully reconfigured. Initializing dashboard session...

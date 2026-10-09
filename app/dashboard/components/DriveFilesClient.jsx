@@ -110,7 +110,8 @@ export default function DriveFilesClient({ initialFiles = [], isDriveConnected =
                   View Switches
                 </Link>
                 <a href="/api/auth/google" className="drive-oauth-link">
-                  Connect Google Drive ↗
+                  <span>Connect Google Drive</span>
+                  <ArrowUpRight size={13} />
                 </a>
               </>
             )}

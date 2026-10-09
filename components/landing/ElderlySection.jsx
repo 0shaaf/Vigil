@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Heart, Bell, PhoneCall } from "lucide-react";
+import { Heart, Bell, PhoneCall, Check } from "lucide-react";
 
 export default function ElderlySection() {
   const [tapped, setTapped] = useState(false);
@@ -122,13 +122,20 @@ export default function ElderlySection() {
                   </div>
                   <button
                     onClick={() => setTapped(true)}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shrink-0 ${
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shrink-0 flex items-center gap-1.5 ${
                       tapped
                         ? "bg-emerald-400 text-black"
                         : "bg-[#ff3b19] text-white hover:bg-[#ff5233]"
                     }`}
                   >
-                    {tapped ? "✓ All Good Today" : "I'm Safe (Tap)"}
+                    {tapped ? (
+                      <>
+                        <Check size={14} />
+                        <span>All Good Today</span>
+                      </>
+                    ) : (
+                      <span>I'm Safe (Tap)</span>
+                    )}
                   </button>
                 </div>
               </div>

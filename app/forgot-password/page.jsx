@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+import { Check } from "lucide-react";
 import "./forgot-password.css";
 
 const supabase = createClient(
@@ -59,7 +60,9 @@ export default function ForgotPasswordPage() {
 
                 {success ? (
                     <div className="auth-success-box">
-                        <div className="success-icon">✓</div>
+                        <div className="success-icon" style={{ display: "flex", justifyContent: "center" }}>
+                            <Check size={28} />
+                        </div>
                         <h2 className="success-title">Recovery Link Dispatched</h2>
                         <p className="success-desc">
                             If an account is associated with <strong>{email}</strong>, a single-use authorization link has been transmitted. Follow the email link to configure a new master secret.

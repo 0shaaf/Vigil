@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Search, FileText, FolderOpen, AlertCircle, Check } from "lucide-react";
+import { X, Search, FileText, FolderOpen, AlertCircle, Check, ArrowUpRight } from "lucide-react";
 import "@/app/dashboard/css/drive-picker-modal.css";
 
 export default function GoogleDrivePickerModal({
@@ -143,7 +143,8 @@ export default function GoogleDrivePickerModal({
                                 release files during switch escalation.
                             </p>
                             <a href="/api/auth/google" className="drive-picker-connect-btn">
-                                Connect Google Drive ↗
+                                <span>Connect Google Drive</span>
+                                <ArrowUpRight size={14} />
                             </a>
                         </div>
                     ) : (

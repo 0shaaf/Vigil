@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { AlertTriangle, Check } from "lucide-react";
 
 export default function CheckInClient() {
   const searchParams = useSearchParams();
@@ -103,7 +104,10 @@ export default function CheckInClient() {
       {!loading && errorMsg && (
         <div>
           <div className="checkin-error-box">
-            <div className="error-title">✕ Authorization Error</div>
+            <div className="error-title" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <AlertTriangle size={15} />
+              <span>Authorization Error</span>
+            </div>
             {errorMsg}
           </div>
           <Link href="/dashboard" className="btn-secondary">
@@ -115,7 +119,9 @@ export default function CheckInClient() {
       {/* 3. Success State */}
       {!loading && successData && (
         <div className="success-terminal">
-          <div className="success-glyph">✓</div>
+          <div className="success-glyph">
+            <Check size={26} />
+          </div>
           <h2 className="terminal-title">Heartbeat Acknowledged</h2>
           <p className="terminal-desc">
             The switch interval has been reset to full duration. Autonomous fail-safes and disclosures remain disarmed.

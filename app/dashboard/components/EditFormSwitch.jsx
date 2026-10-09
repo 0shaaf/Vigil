@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { updateSwitch } from "@/app/actions/switches";
 import GoogleDrivePickerModal from "@/app/components/GoogleDrivePickerModal";
+import { Paperclip, FileText, X } from "lucide-react";
 
 export default function EditFormSwitch({ initialSwitch, availableContacts = [] }) {
   const router = useRouter();
@@ -509,9 +510,12 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
                         borderRadius: "4px",
                         fontSize: "12px",
                         cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
                       }}
                     >
-                      📎{" "}
+                      <Paperclip size={13} />
                       {row.file_metadata?.length > 0
                         ? `Manage Files (${row.file_metadata.length})`
                         : "Attach Drive Files"}
@@ -552,7 +556,7 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
                               style={{ width: "14px", height: "14px" }}
                             />
                           ) : (
-                            <span>📄</span>
+                            <FileText size={14} />
                           )}
                           <span
                             style={{
@@ -576,9 +580,11 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
                               fontSize: "13px",
                               padding: "0 2px",
                               lineHeight: 1,
+                              display: "inline-flex",
+                              alignItems: "center",
                             }}
                           >
-                            ✕
+                            <X size={12} />
                           </button>
                         </div>
                       ))}

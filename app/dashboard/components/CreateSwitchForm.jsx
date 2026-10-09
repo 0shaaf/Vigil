@@ -21,8 +21,12 @@ import {
   Shield,
   Info,
   ArrowUpRight,
+  Trash2,
+  Paperclip,
+  FileText,
+  X,
 } from "lucide-react";
-import { createSwitch, updateSwitch } from "@/app/actions/switches";
+import { createSwitch, updateSwitch, removeSwitch } from "@/app/actions/switches";
 import GoogleDrivePickerModal from "@/app/components/GoogleDrivePickerModal";
 import "../css/switch-form.css";
 
@@ -195,6 +199,9 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
   const [stepError, setStepError] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   // Switch Name inline editing state
   const [isEditingName, setIsEditingName] = useState(false);
@@ -504,6 +511,25 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
     }
   };
 
+  const handleDelete = async () => {
+    if (!initialSwitch?.id) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await removeSwitch(initialSwitch.id);
+      if (res?.error) {
+        setDeleteError(res.error);
+        setDeleting(false);
+      } else {
+        router.push("/dashboard/switches");
+        router.refresh();
+      }
+    } catch (err) {
+      setDeleteError(err?.message || "Failed to delete switch");
+      setDeleting(false);
+    }
+  };
+
   const progressPercent = Math.round((currentStep / TOTAL_STEPS) * 100);
   const selectedContactsCount = contactsValues.filter((c) => c?.selected).length;
 
@@ -549,6 +575,21 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
             <Pencil size={15} />
           </button>
         </div>
+
+        {initialSwitch && (
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteError("");
+              setShowDeleteModal(true);
+            }}
+            className="btn-wizard-header-delete"
+            title="Delete this switch"
+          >
+            <Trash2 size={14} />
+            <span>Delete Switch</span>
+          </button>
+        )}
       </div>
 
       {/* Progress Indicator */}
@@ -775,10 +816,10 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
                             />
 
                             <div className="contact-tile-left">
-                              <span className="contact-name-text">{contact.contact_name}</span>
                               <div className="contact-avatar-badge" title={contact.contact_name}>
                                 {initial}
                               </div>
+                              <span className="contact-name-text">{contact.contact_name}</span>
                             </div>
 
                             <div className="contact-tile-right" onClick={(e) => e.stopPropagation()}>
@@ -887,7 +928,7 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
                                   onClick={() => openDrivePicker(idx)}
                                   className="btn-drive-picker"
                                 >
-                                  <span>📎</span>
+                                  <Paperclip size={13} />
                                   {attachedFiles.length > 0
                                     ? `Manage Drive Files (${attachedFiles.length})`
                                     : "Attach Google Drive Files"}
@@ -905,7 +946,7 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
                                           style={{ width: "14px", height: "14px" }}
                                         />
                                       ) : (
-                                        <span>📄</span>
+                                        <FileText size={14} />
                                       )}
                                       <span className="drive-file-chip-name" title={file.name}>
                                         {file.name}
@@ -916,7 +957,7 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
                                         className="btn-chip-remove"
                                         title="Remove file"
                                       >
-                                        ✕
+                                        <X size={12} />
                                       </button>
                                     </div>
                                   ))}
@@ -1174,8 +1215,8 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
                   <div className="summary-row">
                     <span className="summary-label">Active Modules:</span>
                     <div className="summary-modules-tags">
-                      {activeModules?.beacon && <span className="module-tag">🚨 Beacon</span>}
-                      {activeModules?.lockdown && <span className="module-tag">⚡ Lockdown</span>}
+                      {activeModules?.beacon && <span className="module-tag">Beacon</span>}
+                      {activeModules?.lockdown && <span className="module-tag">Lockdown</span>}
                       {!activeModules?.beacon && !activeModules?.lockdown && (
                         <span className="module-tag" style={{ color: "rgba(255,255,255,0.4)" }}>None</span>
                       )}
@@ -1196,6 +1237,29 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
                     </span>
                   </div>
                 </div>
+
+                {initialSwitch && (
+                  <div className="danger-zone-card">
+                    <div className="danger-zone-header">
+                      <Trash2 size={16} color="#f43f5e" />
+                      <span className="danger-zone-title">Danger Zone</span>
+                    </div>
+                    <p className="danger-zone-desc">
+                      Permanently terminate this switch, its heartbeat schedule, associated disclosure payloads, and audit traces. This action cannot be undone.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteError("");
+                        setShowDeleteModal(true);
+                      }}
+                      className="btn-danger-zone-delete"
+                    >
+                      <Trash2 size={14} />
+                      <span>Permanently Delete Switch</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </form>
@@ -1265,6 +1329,51 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
         }
         onConfirm={handleDriveFilesConfirmed}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div
+          className="switch-delete-modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !deleting) {
+              setShowDeleteModal(false);
+            }
+          }}
+        >
+          <div className="switch-delete-modal-content">
+            <div className="delete-modal-icon-wrap">
+              <Trash2 size={24} />
+            </div>
+            <h3 className="delete-modal-title">Delete Switch</h3>
+            <p className="delete-modal-desc">
+              Are you sure you want to delete <strong>{initialSwitch?.name || "this switch"}</strong>? All associated trigger schedules, beacon disclosure rows, and monitoring configurations will be permanently removed.
+            </p>
+            {deleteError && (
+              <div className="delete-modal-error">
+                {deleteError}
+              </div>
+            )}
+            <div className="delete-modal-actions">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="btn-delete-cancel"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="btn-delete-confirm"
+              >
+                {deleting ? "Deleting..." : "Permanently Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

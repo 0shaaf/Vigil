@@ -5,7 +5,7 @@ import { executeLockdownWebhook } from "./webhook";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Wait window before escalating to next tier
-export const ACK_TIMEOUT_MS = 1 * 60 * 1000;
+export const ACK_TIMEOUT_MS = 15 * 60 * 1000;
 
 export async function processSwitchEscalation(supabase, sw) {
   const switchId = sw.id;

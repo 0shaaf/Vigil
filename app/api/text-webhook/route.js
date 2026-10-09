@@ -19,7 +19,7 @@ async function handleIncomingWebhook(req) {
 
   // Print inspection output directly to terminal
   console.log("\n==========================================");
-  console.log(`🚨 [TEST WEBHOOK RECEIVED] ${timestamp}`);
+  console.log(`[TEST WEBHOOK RECEIVED] ${timestamp}`);
   console.log(`Method:        ${method}`);
   console.log(`User-Agent:    ${userAgent}`);
   console.log(`Authorization: ${authHeader || "None provided"}`);

@@ -357,10 +357,12 @@ export default function ConstellationWeb({ switches = [] }) {
   // Compute arbitrary descending positions, circuit traces, and dynamic canvas height
   const { nodePositions, totalCanvasHeight, circuitTraces, emptyCardPos } = useMemo(() => {
     const total = switches.length;
+    const isMobile = (dimensions.width || 0) < 768;
+
     if (total === 0) {
-      const availW = Math.max(760, dimensions.width);
-      const canvasHeight = Math.max(dimensions.height, 700);
-      const EMPTY_W = 210;
+      const availW = dimensions.width || 375;
+      const canvasHeight = Math.max(dimensions.height || 600, 600);
+      const EMPTY_W = Math.min(210, Math.max(180, availW - 32));
       const EMPTY_H = 136;
       const cx = Math.round(availW / 2);
       const cy = Math.round(canvasHeight * 0.44);
@@ -374,7 +376,8 @@ export default function ConstellationWeb({ switches = [] }) {
       const curvatures = [];
       const terminalPips = [];
 
-      const lineLen = 130;
+      const maxHorizLen = Math.max(16, cardLeft - 16);
+      const lineLen = isMobile ? Math.min(50, maxHorizLen) : 130;
 
       // 4 straight lines extending outward from card edges
       straightLines.push(
@@ -400,16 +403,18 @@ export default function ConstellationWeb({ switches = [] }) {
       };
     }
 
-    const availW = Math.max(760, dimensions.width);
-    const minX = 56;
-    const maxX = availW - CARD_W - 56;
-    const usableSpan = Math.max(200, maxX - minX);
+    const availW = dimensions.width || 375;
+    const minX = isMobile ? 16 : 56;
+    const maxX = Math.max(minX, availW - CARD_W - (isMobile ? 16 : 56));
+    const usableSpan = Math.max(0, maxX - minX);
 
-    const topMargin = 100;
-    const verticalStep = 185; // Vertical step as cards descend down the screen
+    const topMargin = isMobile ? 130 : 100;
+    const verticalStep = isMobile ? 195 : 185; // Vertical step as cards descend down the screen
 
     // Staggered anchor zones for arbitrary yet comfortable positioning (not maniacly far)
-    const zoneFractions = [0.12, 0.72, 0.28, 0.62, 0.18, 0.68, 0.35, 0.52];
+    const zoneFractions = isMobile
+      ? [0.12, 0.88, 0.18, 0.82, 0.10, 0.90]
+      : [0.12, 0.72, 0.28, 0.62, 0.18, 0.68, 0.35, 0.52];
 
     const positions = [];
 
@@ -417,15 +422,15 @@ export default function ConstellationWeb({ switches = [] }) {
       const sw = switches[i];
       const key = sw.id || String(i);
 
-      // Arbitrary yet bounded Y offset (+/- 14px)
-      const jitterY = (hashString(key + "_y") % 29) - 14;
+      // Arbitrary yet bounded Y offset (+/- 14px on desktop, minimal on mobile)
+      const jitterY = isMobile ? 0 : ((hashString(key + "_y") % 29) - 14);
       const y = topMargin + i * verticalStep + jitterY;
 
-      // Anchor zone with deterministic jitter (+/- 0.07)
+      // Anchor zone with deterministic jitter
       const baseZone = zoneFractions[i % zoneFractions.length];
-      const jitterX = ((hashString(key + "_x") % 15) - 7) / 100;
-      const finalFraction = Math.max(0.04, Math.min(0.94, baseZone + jitterX));
-      const x = Math.round(minX + finalFraction * usableSpan);
+      const jitterX = isMobile ? 0 : (((hashString(key + "_x") % 15) - 7) / 100);
+      const finalFraction = Math.max(0, Math.min(1, baseZone + jitterX));
+      const x = usableSpan > 0 ? Math.round(minX + finalFraction * usableSpan) : Math.round((availW - CARD_W) / 2);
 
       positions.push({
         switch: sw,
@@ -446,98 +451,160 @@ export default function ConstellationWeb({ switches = [] }) {
     const STUB = 22; // Straight line overshoot length past curvature branch point
 
     if (total >= 2) {
-      if (total >= 3) {
-        // Reproduce the user's root spine pattern from Card 0 to Card 1 & Card 2
-        const c0 = positions[0];
-        const c1 = positions[1];
-        const c2 = positions[2];
+      if (isMobile) {
+        // Mobile Layout: Clean sequential vertical bus connecting strictly in the open gap between cards.
+        // Starts at the bottom edge of Card i and terminates at the top edge of Card i+1,
+        // so lines and curvatures NEVER go underneath or behind any switch card.
+        for (let i = 0; i < total - 1; i++) {
+          const from = positions[i];
+          const to = positions[i + 1];
 
-        const c0BottomMidX = c0.x + 44;
-        const c0BottomY = c0.y + CARD_H;
+          const fromX = Math.round(from.x + CARD_W / 2);
+          const fromY = from.y + CARD_H;
+          const toX = Math.round(to.x + CARD_W / 2);
+          const toY = to.y;
 
-        // 1. Continuous vertical straight spine from Card 0 down past c2 branch with downward stub
-        const c1BranchY = c0BottomY + 28;
-        const c2TargetY = c2.y + 52;
-        const c2VertBranchY = c2TargetY - 26;
-        const c2VertStubEnd = c2VertBranchY + STUB + 12;
+          const gap = toY - fromY;
+          const midY = Math.round(fromY + gap / 2);
 
-        straightLines.push({
-          id: "spine-c0-c2",
-          x1: c0BottomMidX,
-          y1: c0BottomY,
-          x2: c0BottomMidX,
-          y2: c2VertStubEnd,
-        });
+          // Terminal connection pips right at card edges
+          terminalPips.push(
+            { id: `mob-pip-out-${i}`, x: fromX, y: fromY },
+            { id: `mob-pip-in-${i + 1}`, x: toX, y: toY }
+          );
 
-        // 2. Branch to Card 1 (Horizontal S-curve with stubs)
-        const c1MidY = c1.y + 52;
-        const c1BranchMidX = c0BottomMidX + (c1.x - c0BottomMidX) * 0.52;
+          if (Math.abs(fromX - toX) < 4) {
+            // Straight vertical line connecting the two cards directly
+            straightLines.push({
+              id: `mob-line-vert-${i}`,
+              x1: fromX,
+              y1: fromY,
+              x2: fromX,
+              y2: toY,
+            });
+          } else {
+            // Stepped fillet in the clear open gap between cards
+            const filletR = Math.min(16, Math.max(8, Math.floor(gap * 0.25)));
+            const yBranch1 = midY - filletR;
+            const yBranch2 = midY + filletR;
 
-        // Top horizontal line emerging from spine going right, overshooting past branch point
-        straightLines.push({
-          id: "str-c0-c1-top",
-          x1: c0BottomMidX,
-          y1: c1BranchY,
-          x2: c1BranchMidX + STUB,
-          y2: c1BranchY,
-        });
+            straightLines.push({
+              id: `mob-drop-${i}`,
+              x1: fromX,
+              y1: fromY,
+              x2: fromX,
+              y2: yBranch1,
+            });
 
-        // Bottom horizontal line emerging from Card 1 going left, overshooting past branch point
-        straightLines.push({
-          id: "str-c0-c1-bot",
-          x1: c1.x,
-          y1: c1MidY,
-          x2: c1BranchMidX - STUB + 10,
-          y2: c1MidY,
-        });
+            curvatures.push({
+              id: `mob-curve-${i}`,
+              d: `M ${fromX} ${yBranch1} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${yBranch2}`,
+            });
 
-        // S-curve curvature
-        const c1TopBranchPt = { x: c1BranchMidX, y: c1BranchY };
-        const c1BotBranchPt = { x: c1BranchMidX + 10, y: c1MidY };
-        const c1Dy = c1BotBranchPt.y - c1TopBranchPt.y;
-
-        curvatures.push({
-          id: "curve-c0-c1",
-          d: `M ${c1TopBranchPt.x} ${c1TopBranchPt.y} C ${c1TopBranchPt.x + 32} ${c1TopBranchPt.y + c1Dy * 0.15}, ${c1BotBranchPt.x - 32} ${c1BotBranchPt.y - c1Dy * 0.15}, ${c1BotBranchPt.x} ${c1BotBranchPt.y}`,
-        });
-
-        terminalPips.push(
-          { id: "pip-c0-c1-top", x: c1TopBranchPt.x, y: c1TopBranchPt.y },
-          { id: "pip-c0-c1-bot", x: c1BotBranchPt.x, y: c1BotBranchPt.y }
-        );
-
-        // 3. Branch to Card 2 (Orthogonal fillet with stubs)
-        const c2MidY = c2TargetY;
-        const c2IsRight = c2.x >= c0BottomMidX;
-        const c2HorizBranchX = c0BottomMidX + (c2IsRight ? 26 : -26);
-        const c2HorizStubEnd = c0BottomMidX + (c2IsRight ? -STUB : STUB);
-
-        straightLines.push({
-          id: "str-c0-c2-horiz",
-          x1: c2IsRight ? c2.x : c2.x + CARD_W,
-          y1: c2MidY,
-          x2: c2HorizStubEnd,
-          y2: c2MidY,
-        });
-
-        curvatures.push({
-          id: "curve-c0-c2",
-          d: `M ${c0BottomMidX} ${c2VertBranchY} C ${c0BottomMidX} ${c2MidY}, ${c0BottomMidX + (c2IsRight ? 8 : -8)} ${c2MidY}, ${c2HorizBranchX} ${c2MidY}`,
-        });
-
-        terminalPips.push(
-          { id: "pip-c0-c2-vert", x: c0BottomMidX, y: c2VertBranchY },
-          { id: "pip-c0-c2-horiz", x: c2HorizBranchX, y: c2MidY }
-        );
+            straightLines.push({
+              id: `mob-enter-${i}`,
+              x1: toX,
+              y1: yBranch2,
+              x2: toX,
+              y2: toY,
+            });
+          }
+        }
       } else {
-        // Exactly 2 cards
-        connectCardPair(positions[0], positions[1], 0, straightLines, curvatures, terminalPips, STUB, CARD_W, CARD_H);
-      }
+        // Desktop Layout (total >= 2)
+        if (total >= 3) {
+          // Reproduce the user's root spine pattern from Card 0 to Card 1 & Card 2
+          const c0 = positions[0];
+          const c1 = positions[1];
+          const c2 = positions[2];
 
-      // Connect subsequent cards sequentially (2->3, 3->4, etc.)
-      const startIndex = total >= 3 ? 2 : 1;
-      for (let i = startIndex; i < total - 1; i++) {
-        connectCardPair(positions[i], positions[i + 1], i, straightLines, curvatures, terminalPips, STUB, CARD_W, CARD_H);
+          const c0BottomMidX = c0.x + 44;
+          const c0BottomY = c0.y + CARD_H;
+
+          // 1. Continuous vertical straight spine from Card 0 down past c2 branch with downward stub
+          const c1BranchY = c0BottomY + 28;
+          const c2TargetY = c2.y + 52;
+          const c2VertBranchY = c2TargetY - 26;
+          const c2VertStubEnd = c2VertBranchY + STUB + 12;
+
+          straightLines.push({
+            id: "spine-c0-c2",
+            x1: c0BottomMidX,
+            y1: c0BottomY,
+            x2: c0BottomMidX,
+            y2: c2VertStubEnd,
+          });
+
+          // 2. Branch to Card 1 (Horizontal S-curve with stubs)
+          const c1MidY = c1.y + 52;
+          const c1BranchMidX = c0BottomMidX + (c1.x - c0BottomMidX) * 0.52;
+
+          // Top horizontal line emerging from spine going right, overshooting past branch point
+          straightLines.push({
+            id: "str-c0-c1-top",
+            x1: c0BottomMidX,
+            y1: c1BranchY,
+            x2: c1BranchMidX + STUB,
+            y2: c1BranchY,
+          });
+
+          // Bottom horizontal line emerging from Card 1 going left, overshooting past branch point
+          straightLines.push({
+            id: "str-c0-c1-bot",
+            x1: c1.x,
+            y1: c1MidY,
+            x2: c1BranchMidX - STUB + 10,
+            y2: c1MidY,
+          });
+
+          // S-curve curvature
+          const c1TopBranchPt = { x: c1BranchMidX, y: c1BranchY };
+          const c1BotBranchPt = { x: c1BranchMidX + 10, y: c1MidY };
+          const c1Dy = c1BotBranchPt.y - c1TopBranchPt.y;
+
+          curvatures.push({
+            id: "curve-c0-c1",
+            d: `M ${c1TopBranchPt.x} ${c1TopBranchPt.y} C ${c1TopBranchPt.x + 32} ${c1TopBranchPt.y + c1Dy * 0.15}, ${c1BotBranchPt.x - 32} ${c1BotBranchPt.y - c1Dy * 0.15}, ${c1BotBranchPt.x} ${c1BotBranchPt.y}`,
+          });
+
+          terminalPips.push(
+            { id: "pip-c0-c1-top", x: c1TopBranchPt.x, y: c1TopBranchPt.y },
+            { id: "pip-c0-c1-bot", x: c1BotBranchPt.x, y: c1BotBranchPt.y }
+          );
+
+          // 3. Branch to Card 2 (Orthogonal fillet with stubs)
+          const c2MidY = c2TargetY;
+          const c2IsRight = c2.x >= c0BottomMidX;
+          const c2HorizBranchX = c0BottomMidX + (c2IsRight ? 26 : -26);
+          const c2HorizStubEnd = c0BottomMidX + (c2IsRight ? -STUB : STUB);
+
+          straightLines.push({
+            id: "str-c0-c2-horiz",
+            x1: c2IsRight ? c2.x : c2.x + CARD_W,
+            y1: c2MidY,
+            x2: c2HorizStubEnd,
+            y2: c2MidY,
+          });
+
+          curvatures.push({
+            id: "curve-c0-c2",
+            d: `M ${c0BottomMidX} ${c2VertBranchY} C ${c0BottomMidX} ${c2MidY}, ${c0BottomMidX + (c2IsRight ? 8 : -8)} ${c2MidY}, ${c2HorizBranchX} ${c2MidY}`,
+          });
+
+          terminalPips.push(
+            { id: "pip-c0-c2-vert", x: c0BottomMidX, y: c2VertBranchY },
+            { id: "pip-c0-c2-horiz", x: c2HorizBranchX, y: c2MidY }
+          );
+        } else {
+          // Exactly 2 cards
+          connectCardPair(positions[0], positions[1], 0, straightLines, curvatures, terminalPips, STUB, CARD_W, CARD_H);
+        }
+
+        // Connect subsequent cards sequentially (2->3, 3->4, etc.)
+        const startIndex = total >= 3 ? 2 : 1;
+        for (let i = startIndex; i < total - 1; i++) {
+          connectCardPair(positions[i], positions[i + 1], i, straightLines, curvatures, terminalPips, STUB, CARD_W, CARD_H);
+        }
       }
     }
 
