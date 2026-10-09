@@ -35,15 +35,35 @@ export async function processSwitchEscalation(supabase, sw) {
     .eq("switch_id", switchId);
 
   if (scErr || !switchContacts || switchContacts.length === 0) {
+    if (scErr) {
+      console.error("[SERVER ERROR] [processSwitchEscalation] Database error fetching switch contacts:", {
+        switchId,
+        error: scErr.message,
+        details: scErr.details,
+      });
+      return { status: "ERROR", error: scErr.message };
+    }
+
+    console.log("[SERVER INFO] [processSwitchEscalation] No contacts configured for switch. Proceeding smoothly to EXHAUSTED:", {
+      switchId,
+      switchName: sw.name,
+    });
+
+    await supabase
+      .from("switches")
+      .update({ status: "EXHAUSTED" })
+      .eq("id", switchId);
+
     await supabase.from("escalation_logs").insert({
       usr_id: sw.usr_id,
       switch_id: switchId,
       event_type: "TRIGGER_FIRED",
       channel: "SYSTEM",
-      status: "FAILED",
-      details: "Escalation halted: No contacts linked to this switch.",
+      status: "SUCCESS",
+      details: "Fail-safe sequence completed without linked notification contacts. Switch marked EXHAUSTED.",
     });
-    return { status: "NO_CONTACTS" };
+
+    return { status: "EXHAUSTED", reason: "NO_CONTACTS" };
   }
 
   // 2. If ANY contact has already acknowledged, ensure switch is RESOLVED and halt
@@ -133,7 +153,11 @@ export async function processSwitchEscalation(supabase, sw) {
     .eq("switch_id", switchId);
 
   if (payloadErr) {
-    console.error("[Escalation] Error fetching payloads:", payloadErr);
+    console.error("[SERVER ERROR] [processSwitchEscalation] Failed fetching disclosure payloads from database:", {
+      switchId,
+      error: payloadErr.message,
+      details: payloadErr.details,
+    });
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -171,7 +195,11 @@ export async function processSwitchEscalation(supabase, sw) {
       try {
         accessToken = await getValidGoogleAccessToken(supabase, sw.usr_id);
       } catch (tokenErr) {
-        console.warn("[Escalation] Failed retrieving Drive access token:", tokenErr);
+        console.error("[SERVER ERROR] [processSwitchEscalation] Exception retrieving Google Drive access token:", {
+          userId: sw.usr_id,
+          switchId,
+          error: tokenErr.message,
+        });
       }
 
       // Grant permissions on attached files
@@ -190,22 +218,22 @@ export async function processSwitchEscalation(supabase, sw) {
           ? authorizedPayloads
               .map(
                 (p, idx) => `
-                <div style="background:#111622; border:1px solid #1e293b; border-radius:6px; padding:12px; margin-bottom:10px;">
-                  <p style="color:#94a3b8; font-size:11px; margin:0 0 6px 0; text-transform:uppercase;">Disclosure #${idx + 1}</p>
-                  <div style="color:#f1f5f9; font-family:monospace; font-size:13px; white-space:pre-wrap;">${
-                    p.content || "<i>No text message attached.</i>"
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px; margin-bottom: 12px;">
+                  <p style="color: #64748b; font-size: 11px; margin: 0 0 8px 0; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Disclosure #${idx + 1}</p>
+                  <div style="color: #0f172a; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; white-space: pre-wrap; line-height: 1.6;">${
+                    p.content || "No text message attached."
                   }</div>
                   
                   ${
                     Array.isArray(p.file_metadata) && p.file_metadata.length > 0
                       ? `
-                    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #1e293b;">
-                      <div style="font-size: 10px; text-transform: uppercase; color: #38bdf8; font-weight: 700; margin-bottom: 6px;">Attached Drive Assets</div>
+                    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+                      <div style="font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.05em;">Attached Drive Assets</div>
                       ${p.file_metadata
                         .map(
                           (f) => `
-                        <div style="margin-bottom: 4px;">
-                          📄 <a href="${f.webViewLink}" target="_blank" style="color: #60a5fa; text-decoration: underline; font-size: 13px;">${f.name}</a>
+                        <div style="margin-bottom: 6px;">
+                          <a href="${f.webViewLink}" target="_blank" style="color: #ff3b19; text-decoration: underline; font-size: 13px; font-weight: 600;">${f.name}</a>
                         </div>
                       `
                         )
@@ -217,34 +245,49 @@ export async function processSwitchEscalation(supabase, sw) {
                 </div>`
               )
               .join("")
-          : `<p style="color:#64748b; font-style:italic;">No secret disclosures designated for your security clearance tier.</p>`;
+          : `<p style="color: #64748b; font-style: italic; font-size: 13px;">No secret disclosures designated for your security clearance tier.</p>`;
 
       // Send outbound email
       await resend.emails.send({
         from: "Vigil Sentinel <sentinel@shaaf.me>",
         to: recipientEmail,
-        subject: `[ACTION REQUIRED] Dead Man's Switch Triggered: ${sw.name}`,
+        subject: `Fail-Safe Trigger Notification: ${sw.name}`,
         html: `
-          <div style="background-color:#08090c; color:#f1f5f9; font-family:sans-serif; padding:32px 24px;">
-            <div style="max-width:560px; margin:0 auto; background:#0d111a; border:1px solid #1e293b; border-radius:10px; padding:28px;">
-              <h2 style="color:#ffffff; margin:0 0 8px 0; font-size:18px;">Vigil Fail-Safe Trigger Notification</h2>
-              <p style="color:#94a3b8; font-size:13px; line-height:1.5;">
-                Hello <strong>${recipientName}</strong>,<br/>
-                The automated sentinel <strong>${sw.name}</strong> has failed to receive an operator pulse and has tripped. You are receiving this because of your priority clearance tier (<strong>Priority: ${highestPriority}</strong>).
+          <div style="background-color: #f8fafc; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 40px 20px;">
+            <div style="max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <div style="font-size: 11px; letter-spacing: 0.08em; color: #ff3b19; text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">
+                Fail-Safe Protocol Activated
+              </div>
+              <h2 style="color: #0f172a; margin: 0 0 16px 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em;">
+                Automated Sentinel Escalation
+              </h2>
+              <p style="color: #334155; font-size: 14px; line-height: 1.6; margin: 0 0 14px 0;">
+                Recipient: <strong>${recipientName}</strong>
+              </p>
+              <p style="color: #334155; font-size: 14px; line-height: 1.6; margin: 0 0 24px 0;">
+                The automated sentinel <strong>${sw.name}</strong> failed to receive an operator pulse within its designated parameter window and has tripped. Pursuant to the operator's instructions, you have been designated as an authorized recipient (Priority Tier: ${highestPriority}).
               </p>
 
-              <div style="margin:24px 0;">
-                <h3 style="color:#38bdf8; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">Released Payloads</h3>
+              <div style="margin: 24px 0;">
+                <div style="font-size: 11px; letter-spacing: 0.05em; color: #475569; text-transform: uppercase; font-weight: 700; margin-bottom: 12px;">
+                  Authorized Disclosures
+                </div>
                 ${payloadHtml}
               </div>
 
-              <div style="margin-top:28px; text-align:center; padding-top:20px; border-top:1px solid #1e293b;">
-                <p style="color:#94a3b8; font-size:12px; margin-bottom:14px;">
-                  Please acknowledge receipt to halt further waterfall escalation to secondary contacts.
+              <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; text-align: center;">
+                <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin: 0 0 16px 0;">
+                  Acknowledge receipt to confirm delivery and halt further waterfall escalation to subsequent contacts.
                 </p>
-                <a href="${ackUrl}" style="background-color:#0284c7; color:#ffffff; padding:12px 24px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:13px; display:inline-block;">
-                  Acknowledge Incident & Halt Escalation
+                <a href="${ackUrl}" style="background-color: #ff3b19; color: #ffffff; padding: 13px 26px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 13px; letter-spacing: 0.04em; display: inline-block; text-transform: uppercase;">
+                  Acknowledge Incident and Halt Escalation
                 </a>
+              </div>
+
+              <div style="margin-top: 28px; padding-top: 16px; border-top: 1px solid #f1f5f9; text-align: center;">
+                <p style="color: #94a3b8; font-size: 11px; margin: 0; line-height: 1.5;">
+                  This is a cryptographically signed dispatch generated by the Vigil Sentinel service. Replies to this address are unattended.
+                </p>
               </div>
             </div>
           </div>
@@ -274,7 +317,13 @@ export async function processSwitchEscalation(supabase, sw) {
         execution_metadata: { ack_token: ackToken, priority_score: highestPriority },
       });
     } catch (dispatchErr) {
-      console.error(`[Escalation] Fatal error dispatching to ${recipientEmail}:`, dispatchErr);
+      console.error(`[SERVER ERROR] [processSwitchEscalation] Fatal error dispatching escalation to ${recipientEmail}:`, {
+        switchId,
+        recipientEmail,
+        targetId: target.id,
+        error: dispatchErr.message,
+        stack: dispatchErr.stack,
+      });
 
       await supabase.from("escalation_logs").insert({
         usr_id: sw.usr_id,

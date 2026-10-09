@@ -2,93 +2,149 @@
 
 import React, { useState } from "react";
 import { signUpWithEmail, signInWithGoogle } from "@/app/lib/supabase/auth/client-auth";
+import Link from "next/link";
+import { Mail } from "lucide-react";
 import "./CSS/AuthForm.css";
-import { redirect } from "next/dist/server/api-utils";
 
 export default function SignUpForm({ onToggleMode }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async (e) => {
     e.preventDefault();
     setErrorMessage("");
-    setSuccessMessage("");
     setLoading(true);
 
-    const { data, error } = await signUpWithEmail(email, password);
+    try {
+      const { data, error } = await signUpWithEmail(email, password, {
+        full_name: name || undefined,
+      });
 
-    if (error) {
-      setErrorMessage(error.message);
+      if (error) {
+        setErrorMessage(error.message);
+        setLoading(false);
+      } else {
+        setLoading(false);
+        setSubmittedEmail(email);
+        setIsSuccess(true);
+      }
+    } catch (err) {
+      setErrorMessage("Registration service unavailable. Check network connectivity.");
       setLoading(false);
-    } else {
-      setLoading(false);
-      setSuccessMessage("Account created! Check your email inbox to confirm.");
     }
   };
 
   const handleGoogleSignUp = async () => {
     setErrorMessage("");
-    const { error } = await signInWithGoogle();
-    if (error) {
-      setErrorMessage(error.message);
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        setErrorMessage(error.message);
+      }
+    } catch (err) {
+      setErrorMessage("OAuth provider error.");
     }
   };
 
+  // Crisp Dedicated Confirmation Screen
+  if (isSuccess) {
+    return (
+      <div className="form-container auth-confirmation-view">
+        <div className="auth-confirm-icon-wrap">
+          <Mail size={24} />
+        </div>
+
+        <p className="title" style={{ margin: "0 0 10px 0", fontSize: "20px" }}>
+          Check your email
+        </p>
+
+        <p className="auth-confirm-text">
+          A confirmation link was dispatched to:
+        </p>
+
+        <div className="auth-confirm-email-pill">
+          {submittedEmail}
+        </div>
+
+        <p className="auth-confirm-subtext">
+          Click the link inside to activate your account and proceed.
+        </p>
+
+        <div className="auth-confirm-actions">
+          <Link href="/login" className="form-btn">
+            Proceed to Log in
+          </Link>
+          <button
+            type="button"
+            className="auth-confirm-secondary-btn"
+            onClick={() => {
+              setIsSuccess(false);
+              setEmail("");
+              setPassword("");
+            }}
+          >
+            Register with a different address
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="form-container">
-      <p className="form-title">Create account</p>
+      <p className="title">Create an account</p>
 
       {errorMessage && <div className="auth-error">{errorMessage}</div>}
-      {successMessage && (
-        <div className="auth-error" style={{ backgroundColor: "#ecfdf5", color: "#047857" }}>
-          {successMessage}
-        </div>
-      )}
 
-      <form className="auth-form" onSubmit={handleSignUp}>
+      <form className="form" onSubmit={handleSignUp}>
         <input
           type="text"
-          className="auth-input"
-          placeholder="Name"
+          className="input"
+          placeholder="Full Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         <input
           type="email"
-          className="auth-input"
+          className="input"
           placeholder="Email"
           required
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <input
           type="password"
-          className="auth-input"
+          className="input"
           placeholder="Password"
           required
           minLength={6}
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button type="submit" className="form-btn" disabled={loading}>
-          {loading ? "Creating account..." : "Create account"}
+        <button className="form-btn" type="submit" disabled={loading}>
+          {loading ? "Signing up..." : "Sign up"}
         </button>
       </form>
 
       <p className="sign-up-label">
         Already have an account?
-        <span className="sign-up-link" onClick={onToggleMode}>
-          Log in
-        </span>
+        {onToggleMode ? (
+          <span className="sign-up-link" onClick={onToggleMode}>
+            Log in
+          </span>
+        ) : (
+          <Link href="/login" className="sign-up-link">
+            Log in
+          </Link>
+        )}
       </p>
-
-      <div className="auth-divider">
-        <span>or</span>
-      </div>
 
       <div className="buttons-container">
         <button
@@ -101,6 +157,8 @@ export default function SignUpForm({ onToggleMode }) {
             fill="currentColor"
             strokeWidth={0}
             version="1.1"
+            x="0px"
+            y="0px"
             className="google-icon"
             viewBox="0 0 48 48"
             height="1em"

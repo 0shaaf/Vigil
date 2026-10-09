@@ -23,10 +23,13 @@ export default async function EscalationLogsPage() {
     redirect("/login");
   }
 
-  // 3. Query using user.id (NOT user.usr_id)
-  const { data: logs, error } = await supabase
+  const PAGE_SIZE = 50;
+
+  // 3. Query initial slice of 50 logs using user.id and exact count
+  const { data: logs, count, error } = await supabase
     .from("escalation_logs")
-    .select(`
+    .select(
+      `
       id,
       usr_id,
       switch_id,
@@ -42,30 +45,28 @@ export default async function EscalationLogsPage() {
         id,
         name
       )
-    `)
+    `,
+      { count: "exact" }
+    )
     .eq("usr_id", user.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(0, PAGE_SIZE - 1);
 
-    console.log(logs);
   if (error) {
     console.error("[EscalationLogsPage] Error fetching telemetry:", error);
   }
 
+  const totalCount = count || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
   return (
     <main className="logs-container">
-      <header className="logs-header">
-        <div className="logs-title-area">
-          <h1>
-            <span className="logs-title-pip" />
-            Audit & Escalation Logs
-          </h1>
-          <p>
-            Real-time audit telemetry capturing warning dispatches, heartbeat pulses, and autonomous activations.
-          </p>
-        </div>
-      </header>
-
-      <LogsViewer initialLogs={logs || []} />
+      <LogsViewer
+        initialLogs={logs || []}
+        initialTotalCount={totalCount}
+        initialTotalPages={totalPages}
+        pageSize={PAGE_SIZE}
+      />
     </main>
   );
 }

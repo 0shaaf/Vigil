@@ -1,13 +1,14 @@
 import { getSupabaseBrowserClient } from "../browser-client";
 
 
-export async function signUpWithEmail(email, password) {
+export async function signUpWithEmail(email, password, metadata = {}) {
   const sp_BrowserClient = getSupabaseBrowserClient();
   return await sp_BrowserClient.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      emailRedirectTo: `${window.location.origin}/auth/callback?next=/welcome`,
+      data: metadata,
     },
   });
 }

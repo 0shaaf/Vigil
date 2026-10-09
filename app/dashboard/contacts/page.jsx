@@ -13,7 +13,5 @@ export default async function ContactsPage() {
 
   const { data: contacts } = await getContacts();
 
-  return <>
-   <ContactsClient initialContacts={contacts || []} />;
-  </>
+  return <ContactsClient initialContacts={contacts || []} />;
 }

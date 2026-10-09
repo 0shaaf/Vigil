@@ -1,196 +1,721 @@
-/* Container Shell */
+/* =========================================================
+   VIGIL SENTINEL - CONTACTS STYLING (SQUARE WAVE CARDS & MODAL)
+   ========================================================= */
+
+/* Contacts Page Content */
+
 .contacts-page {
-  padding: 36px 40px 100px;
-  max-width: 1000px;
+  position: relative;
+  z-index: 1;
+  padding: 40px 32px 100px;
+  max-width: 1200px;
   margin: 0 auto;
   min-height: 100vh;
   box-sizing: border-box;
-  color: #d1d1d1;
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .contacts-page {
+    padding: 24px 16px 80px;
+  }
 }
 
 /* Header */
 .contacts-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #222222;
-  margin-bottom: 32px;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 28px;
+  gap: 16px;
+}
+
+.contacts-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
 }
 
 .contacts-title {
-  font-size: 1.45rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #f0f0f0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
   margin: 0;
 }
 
 .contacts-subtitle {
-  font-size: 0.83rem;
-  color: #707070;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.55);
   margin-top: 6px;
+  line-height: 1.4;
+  max-width: 600px;
 }
 
-/* Quick Add Box */
-.contact-create-card {
-  background-color: #121212;
-  border: 1px solid #242424;
-  border-radius: 8px;
-  padding: 18px 20px;
-  margin-bottom: 32px;
-}
-
-.create-card-title {
-  font-size: 0.72rem;
+.contacts-count-tag {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  color: #ff3b19;
+  background: rgba(255, 59, 25, 0.1);
+  border: 1px solid rgba(255, 59, 25, 0.25);
+  padding: 4px 12px;
+  border-radius: 9999px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #555555;
-  margin-bottom: 14px;
-  display: block;
 }
 
-.contact-quick-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 12px;
+/* Toolbar */
+.contacts-toolbar {
+  margin-bottom: 28px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.input-contact {
-  background-color: #171717;
-  border: 1px solid #262626;
-  border-radius: 6px;
-  padding: 9px 12px;
-  color: #ededed;
-  font-family: inherit;
-  font-size: 0.85rem;
+.contacts-search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 16px;
+  width: 100%;
+  max-width: 360px;
+  transition: all 0.2s ease;
+}
+
+.contacts-search-box:focus-within {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.contacts-search-input {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
   outline: none;
-  transition: border-color 0.15s ease;
+  width: 100%;
 }
 
-.input-contact:focus {
-  border-color: #444444;
+.contacts-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
 }
 
-.btn-add-contact {
-  background-color: #ededed;
-  color: #111111;
-  border: 1px solid #ededed;
-  border-radius: 6px;
-  padding: 9px 18px;
-  font-size: 0.82rem;
+/* Grid Layout */
+.contacts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 260px));
+  gap: 24px;
+  align-items: stretch;
+}
+
+@media (max-width: 580px) {
+  .contacts-grid {
+    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+    gap: 16px;
+  }
+}
+
+/* =========================================================
+   SQUARE CARDS (.e-card)
+   ========================================================= */
+
+.e-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(12, 12, 16, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.e-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* First Card: Add Contact Trigger */
+.create-trigger-card {
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.create-trigger-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.create-trigger-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+}
+
+.plus-icon-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  box-shadow: none;
+}
+
+.create-trigger-card:hover .plus-icon-circle {
+  background: #ff3b19;
+  color: #000000;
+  border-color: #ff3b19;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.create-trigger-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.create-trigger-sub {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* =========================================================
+   CONTACT WAVE ANIMATION
+   Animation is slower and plays ONLY on hover
+   Strictly follows Vigil 3-color brand system:
+   Black (#000000), White (#ffffff), Blood Orange (#ff3b19)
+   ========================================================= */
+
+.card-wave-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.wave {
+  position: absolute;
+  width: 540px;
+  height: 700px;
+  opacity: 0.55;
+  left: 0;
+  top: 0;
+  margin-left: -50%;
+  margin-top: -70%;
+  background: linear-gradient(744deg, #ff3b19, #ff5233 60%, #ff7700);
+  border-radius: 40%;
+  animation: wave 10s infinite linear;
+  animation-play-state: paused; /* Plays only on hover */
+  transition: opacity 0.3s ease;
+}
+
+.wave:nth-child(2) {
+  top: 60%;
+  animation-duration: 13s;
+  animation-direction: reverse;
+  opacity: 0.45;
+}
+
+.wave:nth-child(3) {
+  top: 75%;
+  animation-duration: 16s;
+  opacity: 0.35;
+}
+
+/* Play animation and reveal vivid waves on hover */
+.contact-card:hover .wave,
+.contact-modal-card:hover .wave {
+  animation-play-state: running;
+  opacity: 0.88;
+}
+
+.contact-card:hover .wave:nth-child(2),
+.contact-modal-card:hover .wave:nth-child(2) {
+  opacity: 0.78;
+}
+
+.contact-card:hover .wave:nth-child(3),
+.contact-modal-card:hover .wave:nth-child(3) {
+  opacity: 0.68;
+}
+
+@keyframes wave {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Card Content (.infotop) */
+.contact-card .infotop {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 22px 18px;
+  box-sizing: border-box;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Profile Picture / Initial Placeholder */
+.contact-avatar-badge {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 12px;
+  transition: transform 0.25s ease, border-color 0.25s ease;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.contact-avatar-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.contact-card:hover .contact-avatar-badge {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.contact-card-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.contact-card-email {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 4px;
+  margin-bottom: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.contact-sentinels-pill {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* Delete Button on Hover */
+.contact-card-delete {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.contact-card:hover .contact-card-delete {
+  opacity: 1;
+}
+
+.contact-card-delete:hover {
+  background: rgba(244, 63, 94, 0.2);
+  border-color: rgba(244, 63, 94, 0.45);
+  color: #ff4d6d;
+}
+
+@media (max-width: 768px) {
+  .contact-card-delete {
+    opacity: 1; /* Always visible on mobile devices */
+  }
+}
+
+/* =========================================================
+   CONTACT CREATION MODAL
+   Matches the exact same wave background as the contact card
+   ========================================================= */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.contact-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #000000;
+  animation: modalScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalScaleUp {
+  from {
+    transform: scale(0.96) translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-glass-layer {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.modal-inner-content {
+  position: relative;
+  z-index: 3;
+  padding: 30px 26px 26px;
+  box-sizing: border-box;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 10;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.modal-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+/* Modal Form */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Field 1: Profile Picture (Center circle with user icon) */
+.avatar-picker-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.avatar-picker-label {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+}
+
+.avatar-circle-button {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px dashed rgba(255, 255, 255, 0.28);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.avatar-circle-button:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.avatar-user-icon {
+  color: rgba(255, 255, 255, 0.75);
+  transition: color 0.2s ease;
+}
+
+.avatar-circle-button:hover .avatar-user-icon {
+  color: #ffffff;
+}
+
+.avatar-upload-subtext {
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: #cbd5e1;
+  margin-top: 3px;
+}
+
+.avatar-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatar-change-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ffffff;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+}
+
+.avatar-circle-button:hover .avatar-change-overlay {
+  opacity: 1;
+}
+
+.file-error-alert {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  color: #fb7185;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+/* Fields 2 & 3: Name & Email Input */
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-label {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.form-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: #ffffff;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  border-color: #ff3b19;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+
+.form-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn-modal-cancel {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
-  transition: opacity 0.15s ease;
+  transition: all 0.2s ease;
 }
 
-.btn-add-contact:hover {
-  opacity: 0.85;
+.btn-modal-cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
-.btn-add-contact:disabled {
-  opacity: 0.4;
+.btn-modal-submit {
+  flex: 2;
+  background: #ff3b19;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  color: #000000;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: none;
+}
+
+.btn-modal-submit:hover:not(:disabled) {
+  background: #ff5233;
+  transform: translateY(-1px);
+}
+
+.btn-modal-submit:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Contacts Table */
-.contacts-table-wrapper {
-  background-color: #121212;
-  border: 1px solid #242424;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.contacts-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.contacts-table th {
-  background-color: #171717;
-  padding: 12px 18px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #666666;
-  border-bottom: 1px solid #222222;
-}
-
-.contacts-table td {
-  padding: 14px 18px;
-  border-bottom: 1px solid #1c1c1c;
-  font-size: 0.85rem;
-  vertical-align: middle;
-}
-
-.contacts-table tr:last-child td {
-  border-bottom: none;
-}
-
-.contacts-table tr:hover td {
-  background-color: #141414;
-}
-
-/* Column Elements */
-.contact-cell-name {
-  color: #e5e5e5;
-  font-weight: 500;
-}
-
-.contact-cell-email {
-  color: #888888;
-  font-family: monospace;
-  font-size: 0.82rem;
-}
-
-.contact-switches-pill {
-  display: inline-flex;
-  align-items: center;
-  background-color: #1a1a1a;
-  border: 1px solid #262626;
-  color: #aaaaaa;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 0.72rem;
-  font-weight: 500;
-}
-
-.btn-delete-contact {
-  background: transparent;
-  border: none;
-  color: #555555;
-  cursor: pointer;
-  padding: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: color 0.15s ease;
-}
-
-.btn-delete-contact:hover {
-  color: #e06c75;
-}
-
-/* Empty State */
-.contacts-empty {
-  padding: 48px 24px;
-  text-align: center;
-  color: #666666;
-  font-size: 0.85rem;
-}
-
+/* Errors */
 .error-callout {
-  background-color: #190f0f;
-  border: 1px solid #3d1c1c;
-  color: #e06c75;
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(244, 63, 94, 0.14);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #fda4af;
+  font-size: 12px;
+  margin-bottom: 20px;
 }

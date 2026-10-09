@@ -1,15 +1,78 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useRef } from "react";
+import { Plus, User, Search, Trash2, Mail, Users, X, Shield, Camera } from "lucide-react";
 import { createContact, deleteContact } from "@/app/actions/contacts";
 import "../css/contacts.css";
 
 export default function ContactsClient({ initialContacts = [] }) {
   const [contacts, setContacts] = useState(initialContacts);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Modal form states
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [fileError, setFileError] = useState("");
+  const fileInputRef = useRef(null);
+
+  const filteredContacts = useMemo(() => {
+    if (!search.trim()) return contacts;
+    const q = search.toLowerCase();
+    return contacts.filter(
+      (c) =>
+        c.contact_name?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q)
+    );
+  }, [contacts, search]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    setFileError("");
+
+    if (!file) {
+      return;
+    }
+
+    const validExtensions = ["png", "jpg", "jpeg"];
+    const fileExtension = file.name.split(".").pop()?.toLowerCase();
+    const isValidType =
+      validExtensions.includes(fileExtension) &&
+      (file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/jpg");
+
+    if (!isValidType) {
+      setFileError("Invalid format. Please select a PNG, JPG, or JPEG image.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    // Generate local preview URL
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAvatarPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleOpenModal = () => {
+    setName("");
+    setEmail("");
+    setAvatarPreview(null);
+    setFileError("");
+    setErrorMsg("");
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setName("");
+    setEmail("");
+    setAvatarPreview(null);
+    setFileError("");
+  };
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -26,129 +89,246 @@ export default function ContactsClient({ initialContacts = [] }) {
     if (res?.error) {
       setErrorMsg(res.error);
     } else if (res?.contact) {
+      // Prepend newly created contact to state
       setContacts([{ ...res.contact, switch_contacts: [] }, ...contacts]);
-      setName("");
-      setEmail("");
+      handleCloseModal();
     }
     setLoading(false);
   };
 
-  const handleDelete = async (id, name, boundSwitchesCount) => {
+  const handleDelete = async (id, contactName, boundSwitchesCount) => {
     if (boundSwitchesCount > 0) {
       const confirmWarning = confirm(
-        `"${name}" is actively bound to ${boundSwitchesCount} switch(es). Deleting this contact will remove their clearance and reset any targeted exceptions to NULL. Proceed?`
+        `"${contactName}" is actively bound to ${boundSwitchesCount} switch(es). Deleting this contact will revoke their access. Proceed?`
       );
       if (!confirmWarning) return;
     } else {
-      if (!confirm(`Delete contact "${name}"?`)) return;
+      if (!confirm(`Remove contact "${contactName}"?`)) return;
     }
 
     const res = await deleteContact(id);
     if (res?.error) {
       setErrorMsg(res.error);
     } else {
-      setContacts(contacts.filter((c) => c.id !== id));
+      setContacts((prev) => prev.filter((c) => c.id !== id));
     }
   };
 
   return (
-    <>
     <div className="contacts-page">
+      {/* Page Header */}
       <header className="contacts-header">
-        <div>
-          <h1 className="contacts-title">Trusted Contacts</h1>
-          <p className="contacts-subtitle">
-            Base pool of authorized recipients for fail-safe trigger escalation.
-          </p>
-        </div>
+        <h1 className="contacts-title">Contactbook</h1>
       </header>
 
-      {errorMsg && <div className="error-callout">{errorMsg}</div>}
+      {errorMsg && !showModal && <div className="error-callout">{errorMsg}</div>}
 
-      {/* Quick Add Interface */}
-      <section className="contact-create-card">
-        <span className="create-card-title">Register Recipient</span>
-        <form onSubmit={handleAdd} className="contact-quick-form">
+      {/* Filter Toolbar */}
+      <div className="contacts-toolbar">
+        <div className="contacts-search-box">
+          <Search size={15} className="text-white/40" />
           <input
             type="text"
-            placeholder="Full Name / Moniker"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="input-contact"
-            required
+            placeholder={`Search all ${contacts.length} contacts`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="contacts-search-input"
           />
-          <input
-            type="email"
-            placeholder="recipient@domain.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="input-contact"
-            required
-          />
-          <button type="submit" disabled={loading} className="btn-add-contact">
-            {loading ? "Adding..." : "+ Add Contact"}
-          </button>
-        </form>
-      </section>
-
-      {/* Recipient Roster */}
-      <div className="contacts-table-wrapper">
-        {contacts.length === 0 ? (
-          <div className="contacts-empty">
-            No recipients registered yet. Add one above to begin assigning clearances.
-          </div>
-        ) : (
-          <table className="contacts-table">
-            <thead>
-              <tr>
-                <th>Identity</th>
-                <th>Channel / Email</th>
-                <th>Assigned Switches</th>
-                <th style={{ width: "48px", textAlign: "right" }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {contacts.map((c) => {
-                const switchCount = c.switch_contacts?.length || 0;
-                return (
-                  <tr key={c.id}>
-                    <td className="contact-cell-name">{c.contact_name}</td>
-                    <td className="contact-cell-email">{c.email}</td>
-                    <td>
-                      <span className="contact-switches-pill">
-                        {switchCount === 1 ? "1 Switch" : `${switchCount} Switches`}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: "right" }}>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(c.id, c.contact_name, switchCount)}
-                        className="btn-delete-contact"
-                        title="Delete contact"
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+        </div>
       </div>
+
+      {/* Contacts Grid: The first card is ALWAYS the Add Contact card */}
+      <div className="contacts-grid">
+        {/* Card 1: Add Contact (Plus Card) */}
+        <div
+          className="e-card create-trigger-card"
+          onClick={handleOpenModal}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") handleOpenModal();
+          }}
+          title="Register new contact"
+        >
+          <div className="create-trigger-content">
+            <div className="plus-icon-circle">
+              <Plus size={32} strokeWidth={2.2} />
+            </div>
+            <span className="create-trigger-title">Add Contact</span>
+            <span className="create-trigger-sub">Register Recipient</span>
+          </div>
+        </div>
+
+        {/* Existing Contacts Cards */}
+        {filteredContacts.map((c) => {
+          const switchCount = c.switch_contacts?.length || 0;
+          const initialLetter = c.contact_name?.trim()?.charAt(0)?.toUpperCase() || "C";
+
+          return (
+            <div key={c.id} className="e-card contact-card">
+              {/* Background Wave layers: Animation plays slowly only on hover */}
+              <div className="card-wave-bg">
+                <div className="wave" />
+                <div className="wave" />
+                <div className="wave" />
+              </div>
+
+              {/* Delete trigger */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(c.id, c.contact_name, switchCount);
+                }}
+                className="contact-card-delete"
+                title={`Remove ${c.contact_name}`}
+              >
+                <Trash2 size={14} />
+              </button>
+
+              {/* Card Center Content */}
+              <div className="infotop">
+                {/* Profile Picture / Initial Placeholder */}
+                <div className="contact-avatar-badge">
+                  {initialLetter}
+                </div>
+
+                <h3 className="contact-card-name" title={c.contact_name}>
+                  {c.contact_name}
+                </h3>
+
+                <p className="contact-card-email" title={c.email}>
+                  {c.email}
+                </p>
+
+                <div className="contact-sentinels-pill">
+                  <Shield size={10} className="text-[#00ddeb]" />
+                  <span>{switchCount === 1 ? "1 Switch" : `${switchCount} Switches`}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Creation Modal */}
+      {showModal && (
+        <div className="modal-backdrop" onClick={handleCloseModal}>
+          <div className="contact-modal-card" onClick={(e) => e.stopPropagation()}>
+            {/* Same matching wave animated background as the contact card */}
+            <div className="card-wave-bg">
+              <div className="wave" />
+              <div className="wave" />
+              <div className="wave" />
+            </div>
+            <div className="modal-glass-layer" />
+
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={handleCloseModal}
+              title="Close modal"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="modal-inner-content">
+              <h2 className="modal-title">Register Recipient</h2>
+              <p className="modal-subtitle">
+                Add an escalation contact to receive fail-safe briefings and disclosures.
+              </p>
+
+              {errorMsg && <div className="error-callout">{errorMsg}</div>}
+
+              <form onSubmit={handleAdd} className="modal-form">
+                {/* Field 1: Profile Picture (Center circle with user icon) */}
+                <div className="avatar-picker-wrapper">
+                  <span className="avatar-picker-label">Profile Picture</span>
+
+                  <label
+                    htmlFor="contact-avatar-file"
+                    className="avatar-circle-button"
+                    title="Choose PNG, JPG, or JPEG image"
+                  >
+                    {avatarPreview ? (
+                      <>
+                        <img
+                          src={avatarPreview}
+                          alt="Avatar preview"
+                          className="avatar-preview-image"
+                        />
+                        <div className="avatar-change-overlay">Change</div>
+                      </>
+                    ) : (
+                      <>
+                        <User size={30} className="avatar-user-icon" />
+                        <span className="avatar-upload-subtext">Upload</span>
+                      </>
+                    )}
+
+                    <input
+                      ref={fileInputRef}
+                      id="contact-avatar-file"
+                      type="file"
+                      accept=".png, .jpg, .jpeg, image/png, image/jpeg"
+                      onChange={handleFileChange}
+                      className="hidden-file-input"
+                    />
+                  </label>
+
+                  {fileError && <div className="file-error-alert">{fileError}</div>}
+                </div>
+
+                {/* Field 2: Name */}
+                <div className="form-field-group">
+                  <label className="form-label">Name</label>
+                  <input
+                    type="text"
+                    placeholder="Full Name (e.g. Sarah Connor)"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="form-input"
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                {/* Field 3: Email */}
+                <div className="form-field-group">
+                  <label className="form-label">Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="recipient@domain.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                {/* Modal Action Buttons */}
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="btn-modal-cancel"
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-modal-submit"
+                    disabled={loading}
+                  >
+                    {loading ? "Registering..." : "Add Contact"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-    </>
   );
 }

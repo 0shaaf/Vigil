@@ -8,9 +8,16 @@ export async function getValidGoogleAccessToken(supabase, userId) {
     .select("*")
     .eq("usr_id", userId)
     .eq("provider", "google_drive")
-    .single();
+    .maybeSingle();
 
   if (error || !integration || !integration.refresh_token) {
+    if (error) {
+      console.error("[SERVER ERROR] [getValidGoogleAccessToken] Database error fetching user_integrations row:", {
+        userId,
+        error: error.message,
+        details: error.details,
+      });
+    }
     return null;
   }
 
@@ -38,13 +45,18 @@ export async function getValidGoogleAccessToken(supabase, userId) {
     const refreshed = await res.json();
 
     if (!res.ok || refreshed.error) {
-      console.error("[Google Token Refresh] Error:", refreshed);
+      console.error("[SERVER ERROR] [getValidGoogleAccessToken] Failed refreshing Google access token:", {
+        userId,
+        status: res.status,
+        error: refreshed.error,
+        errorDescription: refreshed.error_description,
+      });
       return null;
     }
 
     const newExpiry = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
 
-    await supabase
+    const { error: updateErr } = await supabase
       .from("user_integrations")
       .update({
         access_token: refreshed.access_token,
@@ -53,9 +65,20 @@ export async function getValidGoogleAccessToken(supabase, userId) {
       })
       .eq("id", integration.id);
 
+    if (updateErr) {
+      console.error("[SERVER ERROR] [getValidGoogleAccessToken] Failed updating refreshed token in database:", {
+        userId,
+        error: updateErr.message,
+      });
+    }
+
     return refreshed.access_token;
   } catch (err) {
-    console.error("[Google Token Refresh] Fatal:", err);
+    console.error("[SERVER ERROR] [getValidGoogleAccessToken] Fatal exception during token refresh:", {
+      userId,
+      error: err.message,
+      stack: err.stack,
+    });
     return null;
   }
 }
@@ -84,13 +107,23 @@ export async function grantDriveFileAccess(accessToken, fileId, recipientEmail) 
     const data = await res.json();
 
     if (!res.ok) {
-      console.warn(`[Drive Share] Failed to share file ${fileId} with ${recipientEmail}:`, data);
+      console.error("[SERVER ERROR] [grantDriveFileAccess] Failed to grant Drive file reader permission:", {
+        fileId,
+        recipientEmail,
+        status: res.status,
+        error: data.error,
+      });
       return { success: false, error: data.error?.message };
     }
 
     return { success: true, permissionId: data.id };
   } catch (err) {
-    console.error(`[Drive Share Fatal] Exception sharing file ${fileId}:`, err);
+    console.error("[SERVER ERROR] [grantDriveFileAccess] Fatal exception while granting file permissions:", {
+      fileId,
+      recipientEmail,
+      error: err.message,
+      stack: err.stack,
+    });
     return { success: false, error: err.message };
   }
 }

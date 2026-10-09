@@ -1,0 +1,446 @@
+/* =========================================================
+   VIGIL SENTINEL - DRIVE PICKER MODAL STYLING
+   Theme: Obsidian (#090a0f), Blood Orange (#ff3b19), White (#ffffff)
+   Minimal, crisp borders, zero fuzzy shadows
+   ========================================================= */
+
+.drive-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: driveFadeIn 0.18s ease-out forwards;
+}
+
+@keyframes driveFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.drive-picker-card {
+  width: 100%;
+  max-width: 600px;
+  background: #090a0f;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 85vh;
+  box-sizing: border-box;
+  animation: driveScaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes driveScaleUp {
+  from {
+    transform: scale(0.97) translateY(6px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Header */
+.drive-picker-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #000000;
+  gap: 12px;
+}
+
+.drive-picker-title {
+  margin: 0;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 16px;
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.drive-picker-subtitle {
+  margin: 4px 0 0 0;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.drive-picker-close-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.drive-picker-close-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* Body */
+.drive-picker-body {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Search bar */
+.drive-picker-search-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.drive-picker-search-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.drive-picker-search-input-wrap:focus-within {
+  border-color: #ff3b19;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.drive-picker-search-icon {
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.drive-picker-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 13px;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.drive-picker-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.drive-picker-search-clear {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drive-picker-search-clear:hover {
+  color: #ffffff;
+}
+
+.drive-picker-search-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.drive-picker-search-btn:hover:not(:disabled) {
+  background: rgba(255, 59, 25, 0.12);
+  border-color: #ff3b19;
+  color: #ffffff;
+}
+
+.drive-picker-search-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error Banner */
+.drive-picker-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fda4af;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12px;
+}
+
+/* File List Shell */
+.drive-picker-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 330px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.drive-picker-file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.drive-picker-file-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.drive-picker-file-item.selected {
+  background: rgba(255, 59, 25, 0.08);
+  border-color: rgba(255, 59, 25, 0.35);
+}
+
+.drive-picker-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  color: #ffffff;
+}
+
+.drive-picker-checkbox.checked {
+  background: #ff3b19;
+  border-color: #ff3b19;
+}
+
+.drive-picker-file-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.drive-picker-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.drive-picker-file-name {
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drive-picker-file-meta {
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Empty Files / Loading */
+.drive-picker-loading-box,
+.drive-picker-empty-files {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 16px;
+  text-align: center;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.drive-picker-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #ff3b19;
+  border-radius: 50%;
+  animation: driveSpin 0.7s linear infinite;
+}
+
+@keyframes driveSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Empty State (Not Linked) */
+.drive-picker-empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.drive-picker-status-badge {
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 100px;
+  letter-spacing: 0.04em;
+  background: rgba(255, 59, 25, 0.12);
+  color: #ff3b19;
+  border: 1px solid rgba(255, 59, 25, 0.3);
+  margin-bottom: 6px;
+}
+
+.drive-picker-empty-state h4 {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.drive-picker-empty-state p {
+  margin: 4px 0 16px 0;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 380px;
+  line-height: 1.45;
+}
+
+.drive-picker-connect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ff3b19;
+  color: #ffffff;
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.drive-picker-connect-btn:hover {
+  background: #e03010;
+}
+
+/* Footer */
+.drive-picker-footer {
+  padding: 14px 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #000000;
+  gap: 12px;
+}
+
+.drive-picker-selected-count {
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.drive-picker-footer-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.drive-picker-cancel-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.75);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.drive-picker-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.drive-picker-confirm-btn {
+  background: #ff3b19;
+  border: 1px solid #ff3b19;
+  color: #ffffff;
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: none;
+}
+
+.drive-picker-confirm-btn:hover:not(:disabled) {
+  background: #e03010;
+  border-color: #e03010;
+}
+
+.drive-picker-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

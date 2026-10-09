@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
                 <div className="auth-header">
                     <div className="auth-status-badge">
                         <span className="status-pip" />
-                        <span>Vigil // Security Recovery</span>
+                        <span>Vigil • Security Recovery</span>
                     </div>
                     <h1 className="auth-title">Password Recovery</h1>
                     <p className="auth-subtitle">

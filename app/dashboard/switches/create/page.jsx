@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/app/lib/supabase/server-client";
 import CreateSwitchForm from "../../components/CreateSwitchForm";
@@ -17,23 +16,10 @@ export default async function CreateSwitchPage() {
     .order("contact_name", { ascending: true });
 
   return (
-    <div className="switch-view-container">
-      <nav className="view-breadcrumb">
-        <Link href="/dashboard/switches">Switches</Link>
-        <span className="view-breadcrumb-separator">/</span>
-        <span>Arm New Switch</span>
-      </nav>
-
-      <header className="view-header">
-        <div>
-          <h1 className="view-title">Arm New Switch</h1>
-          <p className="view-description">
-            Configure escalation matrix, authorized contacts, and multi-tier disclosure rules.
-          </p>
-        </div>
-      </header>
-
-      <CreateSwitchForm availableContacts={contacts || []} />
+    <div className="switch-create-page-wrapper">
+      <div className="switch-view-container">
+        <CreateSwitchForm availableContacts={contacts || []} />
+      </div>
     </div>
   );
 }

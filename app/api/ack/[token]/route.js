@@ -1,17 +1,18 @@
-import { createSupabaseServerClient } from "@/app/lib/supabase/server-client";
+import { createSupabaseAdminClient } from "@/app/lib/supabase/admin-client";
 
 export async function GET(request, { params }) {
   const resolvedParams = await params;
   const token = resolvedParams?.token;
 
   if (!token) {
+    console.error("[SERVER ERROR] [GET /api/ack/[token]] Request missing acknowledgment token parameter.");
     return new Response(renderHtml("Error", "Missing or invalid acknowledgment token.", false), {
       status: 400,
       headers: { "Content-Type": "text/html" },
     });
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
 
   // 1. Look up contact row by acknowledgment token
   const { data: sc, error: scErr } = await supabase
@@ -35,6 +36,11 @@ export async function GET(request, { params }) {
     .single();
 
   if (scErr || !sc) {
+    console.error("[SERVER ERROR] [GET /api/ack/[token]] Security token lookup failed or token invalid:", {
+      token,
+      error: scErr?.message,
+      details: scErr?.details,
+    });
     return new Response(renderHtml("Invalid Token", "Security token not found or already invalidated.", false), {
       status: 404,
       headers: { "Content-Type": "text/html" },
@@ -73,6 +79,12 @@ export async function GET(request, { params }) {
     .eq("id", sc.id);
 
   if (updateScErr) {
+    console.error("[SERVER ERROR] [GET /api/ack/[token]] Failed updating contact status to 'acked':", {
+      contactId: sc.id,
+      switchId: sc.switch_id,
+      error: updateScErr.message,
+      details: updateScErr.details,
+    });
     return new Response(renderHtml("Database Error", "Failed to register contact acknowledgment.", false), {
       status: 500,
       headers: { "Content-Type": "text/html" },
@@ -80,20 +92,34 @@ export async function GET(request, { params }) {
   }
 
   // 5. Reset all other 'pending' contacts of this switch back to NULL
-  await supabase
+  const { error: resetErr } = await supabase
     .from("switch_contacts")
     .update({ status: null })
     .eq("switch_id", sc.switch_id)
     .eq("status", "pending");
 
+  if (resetErr) {
+    console.error("[SERVER ERROR] [GET /api/ack/[token]] Failed resetting pending contacts to null:", {
+      switchId: sc.switch_id,
+      error: resetErr.message,
+    });
+  }
+
   // 6. Mark parent switch as RESOLVED so cron ignores it completely
-  await supabase
+  const { error: resolveErr } = await supabase
     .from("switches")
     .update({ status: "RESOLVED" })
     .eq("id", sc.switch_id);
 
+  if (resolveErr) {
+    console.error("[SERVER ERROR] [GET /api/ack/[token]] Failed marking switch as RESOLVED:", {
+      switchId: sc.switch_id,
+      error: resolveErr.message,
+    });
+  }
+
   // 7. Log acknowledgment event
-  await supabase.from("escalation_logs").insert({
+  const { error: logErr } = await supabase.from("escalation_logs").insert({
     usr_id: sc.switches?.usr_id,
     switch_id: sc.switch_id,
     event_type: "CHECKIN_PULSE",
@@ -103,6 +129,13 @@ export async function GET(request, { params }) {
     details: `Incident acknowledged by ${sc.contacts?.contact_name || sc.contacts?.email}. Switch transitioned to RESOLVED. Uncontacted recipients reverted to null.`,
     execution_metadata: { ack_token: token },
   });
+
+  if (logErr) {
+    console.error("[SERVER ERROR] [GET /api/ack/[token]] Failed logging acknowledgment event:", {
+      switchId: sc.switch_id,
+      error: logErr.message,
+    });
+  }
 
   return new Response(
     renderHtml(
@@ -153,7 +186,6 @@ function renderHtml(title, message, isSuccess) {
           height: 10px;
           border-radius: 50%;
           background-color: ${isSuccess ? "#34d399" : "#f43f5e"};
-          box-shadow: 0 0 12px ${isSuccess ? "#34d399" : "#f43f5e"};
           margin-bottom: 16px;
         }
         h1 {

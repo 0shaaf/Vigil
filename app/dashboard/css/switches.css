@@ -1,15 +1,18 @@
-/* Base Canvas */
+/* =========================================================
+   VIGIL SENTINEL - SWITCHES LIST VIEW STYLING
+   ========================================================= */
+
 .switches-page {
   min-height: 100vh;
   width: 100%;
   position: relative;
-  background-color: #08090c;
-  color: #f1f5f9;
+  background-color: transparent;
+  color: #ffffff;
   overflow-x: hidden;
   box-sizing: border-box;
 }
 
-/* Overhead Spotlight Aperture (Mirrors Card Radial Glow) */
+/* Overhead Spotlight Aperture */
 .switches-overhead-glow {
   position: absolute;
   top: -240px;
@@ -20,11 +23,11 @@
   border-radius: 50%;
   background: radial-gradient(
     ellipse at center,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0.02) 45%,
+    rgba(255, 59, 25, 0.12) 0%,
+    rgba(255, 59, 25, 0.03) 45%,
     rgba(0, 0, 0, 0) 75%
   );
-  filter: blur(55px);
+  filter: blur(65px);
   pointer-events: none;
   z-index: 0;
 }
@@ -37,8 +40,8 @@
   width: 650px;
   height: 95px;
   border-radius: 200px;
-  background-color: #ffffff;
-  opacity: 0.035;
+  background-color: #ff3b19;
+  opacity: 0.05;
   filter: blur(50px);
   transform: rotate(-18deg);
   pointer-events: none;
@@ -51,18 +54,17 @@
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 75%;
-  max-width: 960px;
+  width: 80%;
+  max-width: 1080px;
   height: 1px;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.15) 25%,
-    rgba(255, 255, 255, 0.45) 50%,
-    rgba(255, 255, 255, 0.15) 75%,
+    rgba(255, 59, 25, 0.15) 25%,
+    rgba(255, 59, 25, 0.5) 50%,
+    rgba(255, 59, 25, 0.15) 75%,
     transparent 100%
   );
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
   pointer-events: none;
   z-index: 1;
 }
@@ -72,9 +74,9 @@
   position: absolute;
   inset: 0;
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 64px 64px;
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 56px 56px;
   mask-image: radial-gradient(ellipse 85% 65% at 50% 10%, #000 25%, transparent 80%);
   -webkit-mask-image: radial-gradient(ellipse 85% 65% at 50% 10%, #000 25%, transparent 80%);
   pointer-events: none;
@@ -85,10 +87,16 @@
 .switches-content-shell {
   position: relative;
   z-index: 2;
-  max-width: 1240px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 36px 24px 64px;
+  padding: 40px 32px 80px;
   box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .switches-content-shell {
+    padding: 24px 16px 64px;
+  }
 }
 
 /* Topbar Header */
@@ -97,27 +105,25 @@
   justify-content: space-between;
   align-items: flex-end;
   padding-bottom: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .switches-heading {
-  font-size: 26px;
-  font-weight: 900;
-  letter-spacing: -0.03em;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   margin: 0 0 4px 0;
-  background: linear-gradient(45deg, #71717a 0%, #ffffff 50%, #a1a1aa 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #ffffff;
 }
 
 .switches-subheading {
-  font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
-  font-size: 11.5px;
-  color: #71717a;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
   margin: 0;
 }
 
@@ -125,73 +131,74 @@
 .btn-new-switch {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 6px;
-  background: #0d0f14;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #f8fafc;
-  font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
-  font-size: 11.5px;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 100px;
+  background: #ff3b19;
+  color: #000000;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-decoration: none;
   text-transform: uppercase;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.5);
   transition: all 0.2s ease;
+  box-shadow: none;
 }
 
 .btn-new-switch:hover {
-  background: #141822;
-  border-color: rgba(255, 255, 255, 0.35);
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.15);
+  background: #ff5233;
   transform: translateY(-1px);
+  box-shadow: none;
 }
 
 /* Responsive Switches Grid */
 .switches-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
   gap: 24px;
 }
 
 /* State Boxes */
 .switches-error {
   padding: 14px 18px;
-  border-radius: 6px;
-  background: rgba(244, 63, 94, 0.08);
+  border-radius: 12px;
+  background: rgba(244, 63, 94, 0.12);
   border: 1px solid rgba(244, 63, 94, 0.3);
   color: #fda4af;
-  font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
-  font-size: 12px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 13px;
   margin-bottom: 24px;
 }
 
 .switches-empty-state {
   text-align: center;
   padding: 80px 24px;
-  border-radius: 10px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  background: rgba(13, 15, 20, 0.4);
+  border-radius: 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  background: rgba(10, 10, 13, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .switches-empty-state p {
-  color: #71717a;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
-  margin: 0 0 12px 0;
-  font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+  margin: 0;
+  font-family: var(--font-sans, 'Inter', sans-serif);
 }
 
 .empty-state-link {
-  color: #ffffff;
+  color: #ff3b19;
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  padding-bottom: 2px;
-  transition: border-color 0.15s ease;
+  transition: color 0.15s ease;
 }
 
 .empty-state-link:hover {
-  border-color: #ffffff;
+  color: #ff5233;
+  text-decoration: underline;
 }

@@ -1,289 +1,351 @@
+/* =========================================================
+   VIGIL SENTINEL - DRIVE ASSET VAULT STYLING
+   ========================================================= */
+
 .drive-vault-container {
-  padding: 2rem;
+  padding: 40px 32px 100px;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .drive-vault-container {
+    padding: 24px 16px 80px;
+  }
 }
 
 .drive-vault-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #1e293b;
-  padding-bottom: 1.25rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 1.5rem;
   gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.drive-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
 }
 
 .drive-vault-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #f8fafc;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #ffffff;
   margin: 0 0 0.25rem 0;
   letter-spacing: -0.02em;
 }
 
 .drive-vault-subtitle {
-  color: #64748b;
-  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.88rem;
   margin: 0;
+  max-width: 600px;
+  line-height: 1.4;
 }
 
 .drive-count-badge {
-  background: #111622;
-  border: 1px solid #1e293b;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-family: monospace;
-  font-size: 0.75rem;
-  color: #38bdf8;
-  letter-spacing: 0.05em;
+  background: rgba(255, 59, 25, 0.1);
+  border: 1px solid rgba(255, 59, 25, 0.25);
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  color: #ff3b19;
+  letter-spacing: 0.03em;
   white-space: nowrap;
 }
 
 /* Filter Controls Toolbar */
 .drive-toolbar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 1.5rem;
+  gap: 14px;
+  margin-bottom: 2rem;
   flex-wrap: wrap;
 }
 
-.drive-search-input {
+.drive-search-wrap {
   flex: 1;
-  min-width: 240px;
-  background: #0d111a;
-  border: 1px solid #1e293b;
-  border-radius: 6px;
-  padding: 8px 14px;
-  color: #f1f5f9;
-  font-size: 0.875rem;
-  outline: none;
-  transition: border-color 0.15s;
+  min-width: 260px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px 16px;
 }
 
-.drive-search-input:focus {
-  border-color: #38bdf8;
+.drive-search-input {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+}
+
+.drive-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .drive-filter-select {
-  background: #0d111a;
-  border: 1px solid #1e293b;
-  border-radius: 6px;
-  padding: 8px 12px;
-  color: #94a3b8;
-  font-size: 0.875rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
   outline: none;
   cursor: pointer;
 }
 
 .drive-filter-select:focus {
-  border-color: #38bdf8;
-  color: #f1f5f9;
+  border-color: #ff3b19;
+  color: #ffffff;
 }
 
 /* Cards Grid */
 .drive-files-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .file-vault-card {
-  background: #0d111a;
-  border: 1px solid #1e293b;
-  border-radius: 8px;
-  padding: 1.125rem;
+  background: rgba(10, 10, 13, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: border-color 0.15s, transform 0.15s;
+  gap: 16px;
+  transition: all 0.2s ease;
 }
 
 .file-vault-card:hover {
-  border-color: #334155;
+  border-color: rgba(255, 255, 255, 0.25);
   transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 .file-card-top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.875rem;
+  justify-content: space-between;
 }
 
 .file-type-icon {
-  width: 30px;
-  height: 30px;
-  background: #161b26;
-  border: 1px solid #1e293b;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 59, 25, 0.1);
+  border: 1px solid rgba(255, 59, 25, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.switch-status-pill {
-  font-size: 0.6875rem;
-  font-family: monospace;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.switch-status-pill.armed {
-  background: rgba(16, 185, 129, 0.1);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.switch-status-pill.escalating {
-  background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.switch-status-pill.resolved {
-  background: rgba(56, 189, 248, 0.1);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.2);
-}
-
-.switch-status-pill.exhausted {
-  background: rgba(100, 116, 139, 0.1);
-  color: #94a3b8;
-  border: 1px solid rgba(100, 116, 139, 0.2);
 }
 
 .file-main-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 1.25rem;
 }
 
 .file-title {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #f1f5f9;
-  white-space: nowrap;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-specs {
-  font-size: 0.75rem;
-  color: #64748b;
-  font-family: monospace;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .file-card-footer {
   display: flex;
-  gap: 8px;
   align-items: center;
-  padding-top: 0.875rem;
-  border-top: 1px solid #161e2e;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .switch-link-button {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #111622;
-  border: 1px solid #1e293b;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 0.75rem;
   text-decoration: none;
-  min-width: 0;
-  transition: background 0.15s, border-color 0.15s;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  max-width: 80%;
+  transition: color 0.15s ease;
 }
 
 .switch-link-button:hover {
-  background: #161e2e;
-  border-color: #38bdf8;
-}
-
-.link-label {
-  color: #64748b;
-  font-size: 0.6875rem;
-  white-space: nowrap;
+  color: #ff3b19;
 }
 
 .switch-name-truncate {
-  color: #38bdf8;
-  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
-}
-
-.arrow-icon {
-  color: #64748b;
-  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 .drive-external-link {
-  background: #111622;
-  border: 1px solid #1e293b;
-  color: #94a3b8;
-  padding: 6px 9px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
-  font-size: 0.8125rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
-  transition: color 0.15s, border-color 0.15s;
+  transition: all 0.15s ease;
 }
 
 .drive-external-link:hover {
-  color: #f1f5f9;
-  border-color: #334155;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
-/* Empty States */
 .drive-empty-card {
-  background: #0d111a;
-  border: 1px dashed #1e293b;
-  border-radius: 10px;
-  padding: 4rem 2rem;
   text-align: center;
+  padding: 80px 24px;
+  border-radius: 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 13, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.drive-empty-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+  gap: 12px;
 }
 
 .drive-empty-card h3 {
-  color: #f1f5f9;
-  font-size: 1.125rem;
-  margin: 0 0 0.5rem 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
 }
 
 .drive-empty-card p {
-  color: #64748b;
-  font-size: 0.875rem;
-  max-width: 400px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 440px;
   line-height: 1.5;
-  margin: 0 0 1.5rem 0;
 }
 
 .drive-cta-btn {
-  background: #1e293b;
-  border: 1px solid #334155;
-  color: #f1f5f9;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  display: inline-flex;
+  padding: 9px 18px;
+  border-radius: 100px;
+  background-color: #ff3b19;
+  color: #000000;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
   text-decoration: none;
-  transition: background 0.15s;
+  letter-spacing: 0.05em;
 }
 
-.drive-cta-btn:hover {
-  background: #334155;
+.drive-oauth-link {
+  display: inline-flex;
+  padding: 9px 18px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.drive-oauth-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+/* =========================================================
+   SIMPLE TOAST NOTIFICATION (BOTTOM RIGHT)
+   ========================================================= */
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 60;
+  background-color: #333;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 5px;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+  animation: toastFadeIn 0.25s ease-out forwards;
+}
+
+.toast.is-leaving {
+  animation: toastFadeOut 0.25s ease-in forwards;
+}
+
+.toast-content {
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  color: #fff;
+}
+
+.toast-icon svg {
+  width: 30px;
+  height: 20px;
+  fill: #fff;
+  display: block;
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }

@@ -15,12 +15,16 @@ export async function executeLockdownWebhook(supabase, sw) {
   const url = config.webhook_url.trim();
 
   // 2. Parse payload JSON with fallback
-  let payloadBody = {};
+    let payloadBody = {};
   if (config.payload_json?.trim()) {
     try {
       payloadBody = JSON.parse(config.payload_json);
     } catch (parseErr) {
-      console.warn("[Lockdown Webhook] JSON parse error, forwarding raw string:", parseErr);
+      console.error("[SERVER ERROR] [executeLockdownWebhook] JSON parse error in lockdown config payload, forwarding raw string:", {
+        switchId: sw.id,
+        rawPayload: config.payload_json,
+        error: parseErr.message,
+      });
       payloadBody = { raw_payload: config.payload_json };
     }
   }
@@ -53,10 +57,17 @@ export async function executeLockdownWebhook(supabase, sw) {
     lockdown_executed_at: new Date().toISOString(),
   };
 
-  await supabase
+  const { error: lockUpdateErr } = await supabase
     .from("switches")
     .update({ actions: updatedActions })
     .eq("id", sw.id);
+
+  if (lockUpdateErr) {
+    console.error("[SERVER ERROR] [executeLockdownWebhook] Failed setting lockdown_executed flag:", {
+      switchId: sw.id,
+      error: lockUpdateErr.message,
+    });
+  }
 
   sw.actions = updatedActions;
 
@@ -71,6 +82,17 @@ export async function executeLockdownWebhook(supabase, sw) {
 
     const responseText = await response.text();
     const isSuccess = response.ok;
+
+    if (!isSuccess) {
+      console.error("[SERVER ERROR] [executeLockdownWebhook] Target webhook returned error status:", {
+        switchId: sw.id,
+        url,
+        method,
+        status: response.status,
+        statusText: response.statusText,
+        responsePreview: responseText.slice(0, 300),
+      });
+    }
 
     await supabase.from("escalation_logs").insert({
       usr_id: sw.usr_id,
@@ -89,7 +111,13 @@ export async function executeLockdownWebhook(supabase, sw) {
 
     return { success: isSuccess, status: response.status };
   } catch (err) {
-    console.error(`[Lockdown Webhook Error] Failed to hit ${url}:`, err);
+    console.error(`[SERVER ERROR] [executeLockdownWebhook] Network or timeout exception hitting ${url}:`, {
+      switchId: sw.id,
+      url,
+      method,
+      error: err.message,
+      stack: err.stack,
+    });
 
     await supabase.from("escalation_logs").insert({
       usr_id: sw.usr_id,

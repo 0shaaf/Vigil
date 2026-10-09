@@ -1,6 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { createSupabaseServerClient } from "./lib/supabase/server-client";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,20 +12,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Vigil — Dead Man's Switch Engine",
-  description: "Automated fail-safe telemetry and privileged credential dissemination",
+  title: "Vigil — Automated Check-In & Safety Sentinel",
+  description: "When you go silent, Vigil speaks for you. Automated dead man's switch for lone workers, family care, and critical infrastructure.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
-export default async function RootLayout({ children }) {
-
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body>
+      <body className="bg-black text-white selection:bg-[#ff3b19] selection:text-white">
         {children}
       </body>
     </html>

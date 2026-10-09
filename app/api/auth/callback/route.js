@@ -9,13 +9,15 @@ export async function GET(request) {
   const error = searchParams.get("error");
   const state = searchParams.get("state");
 
-  console.log(request);
-  
   const appUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
   if (error || !code) {
-    console.error("[Google OAuth Callback] Error or denied:", error);
-    return NextResponse.redirect(new URL(`/dashboard?error=${encodeURIComponent(error || "access_denied")}`, appUrl));
+    console.error("[SERVER ERROR] [GET /api/auth/callback] OAuth authorization error or code missing:", {
+      error,
+      hasCode: Boolean(code),
+      state,
+    });
+    return NextResponse.redirect(new URL(`/dashboard/drive?error=${encodeURIComponent(error || "access_denied")}`, appUrl));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -25,13 +27,19 @@ export async function GET(request) {
   } = await supabase.auth.getUser();
 
   if (userErr || !user) {
-    console.error("[Google OAuth Callback] Active session missing:", userErr);
+    console.error("[SERVER ERROR] [GET /api/auth/callback] Active user session missing or invalid:", {
+      authError: userErr?.message,
+      hasUser: Boolean(user),
+    });
     return NextResponse.redirect(new URL("/login?error=session_expired", appUrl));
   }
 
   if (user.id !== state) {
-    console.error("[Google OAuth Callback] State CSRF mismatch. Expected:", user.id, "Received:", state);
-    return NextResponse.redirect(new URL("/dashboard?error=csrf_mismatch", appUrl));
+    console.error("[SERVER ERROR] [GET /api/auth/callback] State CSRF mismatch:", {
+      expectedUserId: user.id,
+      receivedState: state,
+    });
+    return NextResponse.redirect(new URL("/dashboard/drive?error=csrf_mismatch", appUrl));
   }
 
   try {
@@ -51,9 +59,14 @@ export async function GET(request) {
     const tokens = await tokenResponse.json();
 
     if (!tokenResponse.ok || tokens.error) {
-      console.error("[Google OAuth Callback] Token exchange failed:", tokens);
+      console.error("[SERVER ERROR] [GET /api/auth/callback] Token exchange with Google OAuth failed:", {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        error: tokens.error,
+        errorDescription: tokens.error_description,
+      });
       return NextResponse.redirect(
-        new URL(`/dashboard?error=${encodeURIComponent(tokens.error_description || tokens.error)}`, appUrl)
+        new URL(`/dashboard/drive?error=${encodeURIComponent(tokens.error_description || tokens.error)}`, appUrl)
       );
     }
 
@@ -95,13 +108,20 @@ export async function GET(request) {
       .upsert(upsertData, { onConflict: "usr_id, provider" });
 
     if (dbError) {
-      console.error("[Google OAuth Callback] DB save error:", dbError);
-      return NextResponse.redirect(new URL("/dashboard?error=db_error", appUrl));
+      console.error("[SERVER ERROR] [GET /api/auth/callback] Database error saving user_integrations token:", {
+        userId: user.id,
+        error: dbError.message,
+        details: dbError.details,
+      });
+      return NextResponse.redirect(new URL("/dashboard/drive?error=db_error", appUrl));
     }
 
-    return NextResponse.redirect(new URL("/dashboard?integration=google_connected", appUrl));
+    return NextResponse.redirect(new URL("/dashboard/drive?integration=google_connected", appUrl));
   } catch (err) {
-    console.error("[Google OAuth Callback] Fatal execution failure:", err);
-    return NextResponse.redirect(new URL("/dashboard?error=server_error", appUrl));
+    console.error("[SERVER ERROR] [GET /api/auth/callback] Fatal exception during OAuth token exchange:", {
+      message: err.message,
+      stack: err.stack,
+    });
+    return NextResponse.redirect(new URL("/dashboard/drive?error=server_error", appUrl));
   }
 }

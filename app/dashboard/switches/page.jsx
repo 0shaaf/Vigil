@@ -1,10 +1,31 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import SwitchCard from "../components/SwitchCard";
-import { readTableData } from "@/app/actions/data";
+import { createSupabaseServerClient } from "@/app/lib/supabase/server-client";
 import "../css/switches.css";
 
+export const metadata = {
+  title: "Switches | Vigil",
+  description: "Active fail-safe triggers and release schedules",
+};
+
 export default async function Switches() {
-  const { error, data } = await readTableData("switches");
+  const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    redirect("/login");
+  }
+
+  const { error, data } = await supabase
+    .from("switches")
+    .select("*")
+    .eq("usr_id", user.id)
+    .order("created_at", { ascending: false });
 
   const switches = data || [];
   return (

@@ -93,7 +93,7 @@ export default function ResetPasswordPage() {
         <div className="reset-header">
           <div className="reset-badge">
             <span className="reset-pip" />
-            <span>Vigil // Security Gateway</span>
+            <span>Vigil • Security Gateway</span>
           </div>
           <h1 className="reset-title">Set New Password</h1>
           <p className="reset-subtitle">
@@ -106,7 +106,7 @@ export default function ResetPasswordPage() {
             <div style={{ fontWeight: 700, marginBottom: "4px" }}>Recovery Error</div>
             {errorMsg}
             <div style={{ marginTop: "10px" }}>
-              <Link href="/forgot-password" style={{ color: "#38bdf8", textDecoration: "underline", fontSize: "11px" }}>
+              <Link href="/forgot-password" style={{ color: "#ff3b19", textDecoration: "underline", fontSize: "11px" }}>
                 Request a fresh reset link →
               </Link>
             </div>

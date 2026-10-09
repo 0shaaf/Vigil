@@ -29,8 +29,6 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
   // Modular Actions
   const [modules, setModules] = useState({
     beacon: Boolean(initialSwitch?.actions?.modules?.beacon ?? true),
-    data_release: Boolean(initialSwitch?.actions?.modules?.data_release ?? false),
-    purge: Boolean(initialSwitch?.actions?.modules?.purge ?? false),
     lockdown: Boolean(initialSwitch?.actions?.modules?.lockdown ?? false),
   });
 
@@ -197,7 +195,7 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
 
       {/* 1. Core Metadata */}
       <div>
-        <div className="form-section-title">01 // Primary Identifiers</div>
+        <div className="form-section-title">01 • Primary Identifiers</div>
         <div className="form-group" style={{ marginBottom: "16px" }}>
           <label className="form-label">Switch Name</label>
           <input
@@ -206,7 +204,7 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="form-input"
-            placeholder="e.g. Master Fail-Safe Sentinel"
+            placeholder="e.g. Master Fail-Safe Switch"
           />
         </div>
 
@@ -239,7 +237,7 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
 
       {/* 2. Interval Breakdown */}
       <div>
-        <div className="form-section-title">02 // Reset Countdown Interval</div>
+        <div className="form-section-title">02 • Reset Countdown Interval</div>
         <div className="interval-grid">
           <div className="interval-unit-card">
             <span className="interval-label">Months</span>
@@ -290,7 +288,7 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
 
       {/* 3. Modular Actions */}
       <div>
-        <div className="form-section-title">03 // Action Module Configuration</div>
+        <div className="form-section-title">03 • Action Module Configuration</div>
         <div className="modules-grid">
           <div
             className={`module-toggle-card ${modules.beacon ? "active" : ""}`}
@@ -302,32 +300,6 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
             </div>
             <span className={`module-indicator ${modules.beacon ? "on" : "off"}`}>
               {modules.beacon ? "Active" : "Disarmed"}
-            </span>
-          </div>
-
-          <div
-            className={`module-toggle-card ${modules.data_release ? "active" : ""}`}
-            onClick={() => toggleModule("data_release")}
-          >
-            <div className="module-info">
-              <span className="module-name">Data Release</span>
-              <span className="module-desc">Drive permissions disclosure engine</span>
-            </div>
-            <span className={`module-indicator ${modules.data_release ? "on" : "off"}`}>
-              {modules.data_release ? "Active" : "Disarmed"}
-            </span>
-          </div>
-
-          <div
-            className={`module-toggle-card ${modules.purge ? "active" : ""}`}
-            onClick={() => toggleModule("purge")}
-          >
-            <div className="module-info">
-              <span className="module-name">Destructive Purge</span>
-              <span className="module-desc">Automated cloud asset shredding</span>
-            </div>
-            <span className={`module-indicator ${modules.purge ? "on" : "off"}`}>
-              {modules.purge ? "Active" : "Disarmed"}
             </span>
           </div>
 
@@ -437,7 +409,7 @@ export default function EditFormSwitch({ initialSwitch, availableContacts = [] }
             }}
           >
             <div className="form-section-title" style={{ margin: 0 }}>
-              04 // Disclosures & Drive Releases
+              04 • Disclosures &amp; Drive Releases
             </div>
             <button
               type="button"

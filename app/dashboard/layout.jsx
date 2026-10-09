@@ -7,15 +7,27 @@ export default async function DashboardLayout({ children }) {
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data?.user) {
-    redirect("/");
+    redirect("/login");
+  }
+
+  const user = data.user;
+  const isOnboarded = Boolean(user.user_metadata?.onboarding_completed);
+  if (!isOnboarded) {
+    redirect("/welcome");
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#07090e" }}>
-      <Sidebar userEmail={data.user.email} />
+    <div className="dashboard-root-layout">
+      {/* Global Dashboard Repeating Linear Gradient Pattern */}
+      <div className="dashboard-pattern-bg" aria-hidden="true" />
+
+      <Sidebar
+        userEmail={user.email}
+        userName={user.user_metadata?.full_name}
+        userProfession={user.user_metadata?.profession}
+      />
       
-      {/* Changed overflow: "hidden" to overflowY: "auto" */}
-      <main style={{ flex: 1, padding: 0, overflowY: "auto", height: "100vh" }}>
+      <main className="dashboard-main-viewport">
         {children}
       </main>
     </div>

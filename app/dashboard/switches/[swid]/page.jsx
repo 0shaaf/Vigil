@@ -1,8 +1,8 @@
 import React from "react";
 import { notFound, redirect } from "next/navigation";
-import { getSwitchById } from "@/app/actions/switches"; // Adjust to your server action import path
-import EditFormSwitch from "../../components/EditFormSwitch";
-import "../../css/edit-switch.css";
+import { getSwitchById } from "@/app/actions/switches";
+import CreateSwitchForm from "../../components/CreateSwitchForm";
+import "../../css/switch-form.css";
 import { createSupabaseServerClient } from "@/app/lib/supabase/server-client";
 
 export const metadata = {
@@ -12,9 +12,7 @@ export const metadata = {
 export default async function EditSwitchPage({ params }) {
   const resolvedParams = await params;
   const swid = resolvedParams.swid;
-  
 
-  console.log("Params : " , resolvedParams)
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -30,17 +28,21 @@ export default async function EditSwitchPage({ params }) {
     notFound();
   }
 
-  return (
-    <main className="edit-switch-container">
-      <header className="edit-switch-header">
-        <h1>
-          Configure Switch
-          <span className="edit-header-badge">#{switchData.id}</span>
-        </h1>
-        <p>Modify duration thresholds, criticality tiers, and autonomous action modules.</p>
-      </header>
+  // Fetch the user's available base contacts pool
+  const { data: contacts } = await supabase
+    .from("contacts")
+    .select("id, contact_name, email")
+    .eq("usr_id", user.id)
+    .order("contact_name", { ascending: true });
 
-      <EditFormSwitch initialSwitch={switchData} />
-    </main>
+  return (
+    <div className="switch-create-page-wrapper">
+      <div className="switch-view-container">
+        <CreateSwitchForm
+          initialSwitch={switchData}
+          availableContacts={contacts || []}
+        />
+      </div>
+    </div>
   );
 }

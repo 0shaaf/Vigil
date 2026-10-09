@@ -8,9 +8,13 @@ export async function GET(request) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
+    error: authErr,
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (authErr || !user) {
+    console.error("[SERVER ERROR] [GET /api/drive/files] Unauthorized access attempt:", {
+      authError: authErr?.message,
+    });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -18,6 +22,9 @@ export async function GET(request) {
   const accessToken = await getValidGoogleAccessToken(supabase, user.id);
 
   if (!accessToken) {
+    console.error("[SERVER ERROR] [GET /api/drive/files] Google Drive integration missing or refresh token failed:", {
+      userId: user.id,
+    });
     return NextResponse.json(
       { error: "GOOGLE_NOT_CONNECTED", message: "Google Drive is not linked or needs reconnection." },
       { status: 403 }
@@ -50,13 +57,22 @@ export async function GET(request) {
     const data = await driveRes.json();
 
     if (!driveRes.ok) {
-      console.error("[Drive API Error]:", data);
+      console.error("[SERVER ERROR] [GET /api/drive/files] Google Drive API returned non-200 status:", {
+        status: driveRes.status,
+        statusText: driveRes.statusText,
+        error: data.error,
+        userId: user.id,
+      });
       return NextResponse.json({ error: data.error?.message || "Failed to query Drive." }, { status: driveRes.status });
     }
 
     return NextResponse.json({ files: data.files || [] });
   } catch (err) {
-    console.error("[Drive API Fatal]:", err);
+    console.error("[SERVER ERROR] [GET /api/drive/files] Fatal exception while querying Google Drive API:", {
+      userId: user.id,
+      error: err.message,
+      stack: err.stack,
+    });
     return NextResponse.json({ error: "Internal server error fetching Drive files." }, { status: 500 });
   }
 }

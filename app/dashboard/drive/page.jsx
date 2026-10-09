@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/app/lib/supabase/server-client";
 import DriveFilesClient from "../components/DriveFilesClient";
@@ -13,6 +14,18 @@ export default async function DrivePage() {
   if (!user) {
     redirect("/login");
   }
+
+  // Check if user has connected Google Drive
+  const { data: driveIntegration } = await supabase
+    .from("user_integrations")
+    .select("id, access_token, refresh_token")
+    .eq("usr_id", user.id)
+    .eq("provider", "google_drive")
+    .maybeSingle();
+
+  const isDriveConnected = Boolean(
+    driveIntegration && (driveIntegration.refresh_token || driveIntegration.access_token)
+  );
 
   // Fetch all switches owned by the operator along with their disclosure metadata
   const { data: switchesData, error } = await supabase
@@ -60,5 +73,12 @@ export default async function DrivePage() {
     });
   });
 
-  return <DriveFilesClient initialFiles={initialFiles} />;
+  return (
+    <Suspense fallback={null}>
+      <DriveFilesClient
+        initialFiles={initialFiles}
+        isDriveConnected={isDriveConnected}
+      />
+    </Suspense>
+  );
 }

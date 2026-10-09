@@ -86,7 +86,7 @@ export default function CheckInClient() {
       <div className="checkin-header">
         <div className="checkin-status">
           <span className={`status-dot ${getStatusDotClass()}`} />
-          <span>Vigil // Auth Gateway</span>
+          <span>Vigil • Auth Gateway</span>
         </div>
         <span className="header-version">v1.0.4</span>
       </div>

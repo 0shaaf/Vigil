@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { X, Search, FileText, FolderOpen, AlertCircle, Check } from "lucide-react";
+import "@/app/dashboard/css/drive-picker-modal.css";
 
 export default function GoogleDrivePickerModal({
     isOpen,
@@ -105,65 +107,102 @@ export default function GoogleDrivePickerModal({
     if (!isOpen) return null;
 
     return (
-        <div className="drive-modal-overlay">
-            <div className="drive-modal-card">
+        <div
+            className="drive-picker-overlay"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onClose();
+            }}
+        >
+            <div className="drive-picker-card" role="dialog" aria-modal="true">
                 {/* Modal Header */}
-                <div className="drive-modal-header">
+                <div className="drive-picker-header">
                     <div>
-                        <h3 className="drive-modal-title">Select Drive Attachments</h3>
-                        <p className="drive-modal-subtitle">
+                        <h3 className="drive-picker-title">Select Drive Attachments</h3>
+                        <p className="drive-picker-subtitle">
                             Choose assets to associate with this disclosure package
                         </p>
                     </div>
-                    <button type="button" onClick={onClose} className="drive-modal-close-btn">
-                        ✕
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="drive-picker-close-btn"
+                        title="Close modal"
+                    >
+                        <X size={16} />
                     </button>
                 </div>
 
                 {/* Modal Body */}
-                <div className="drive-modal-body">
+                <div className="drive-picker-body">
                     {notConnected ? (
-                        <div className="drive-empty-state">
-                            <div className="drive-status-badge warn">AUTH REQUIRED</div>
+                        <div className="drive-picker-empty-state">
+                            <div className="drive-picker-status-badge">AUTH REQUIRED</div>
                             <h4>Google Drive Not Linked</h4>
                             <p>
                                 Connect your Google account to grant Vigil read permissions and
                                 release files during switch escalation.
                             </p>
-                            <a href="/api/auth/google" className="drive-connect-btn">
-                                Connect Google Drive
+                            <a href="/api/auth/google" className="drive-picker-connect-btn">
+                                Connect Google Drive ↗
                             </a>
                         </div>
                     ) : (
                         <>
-                            {/* Search Toolbar - rendered as div to avoid nested <form> */}
-                            <div className="drive-search-bar">
-                                <input
-                                    type="text"
-                                    placeholder="Filter by file name..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    className="drive-search-input"
-                                />
+                            {/* Search Toolbar */}
+                            <div className="drive-picker-search-bar">
+                                <div className="drive-picker-search-input-wrap">
+                                    <Search size={14} className="drive-picker-search-icon" />
+                                    <input
+                                        type="text"
+                                        placeholder="Filter by file name..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        className="drive-picker-search-input"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSearchQuery("");
+                                                fetchFiles("");
+                                            }}
+                                            className="drive-picker-search-clear"
+                                            title="Clear search"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    )}
+                                </div>
                                 <button
                                     type="button"
                                     onClick={() => fetchFiles(searchQuery)}
                                     disabled={loading}
-                                    className="drive-search-btn"
+                                    className="drive-picker-search-btn"
                                 >
                                     {loading ? "Searching..." : "Search"}
                                 </button>
                             </div>
 
-                            {errorMsg && <div className="drive-error-banner">{errorMsg}</div>}
+                            {errorMsg && (
+                                <div className="drive-picker-error-banner">
+                                    <AlertCircle size={14} />
+                                    <span>{errorMsg}</span>
+                                </div>
+                            )}
 
                             {/* File Listing */}
-                            <div className="drive-file-list">
+                            <div className="drive-picker-file-list">
                                 {loading ? (
-                                    <div className="drive-loading-box">Querying Drive assets...</div>
+                                    <div className="drive-picker-loading-box">
+                                        <div className="drive-picker-spinner" />
+                                        <span>Querying Drive assets...</span>
+                                    </div>
                                 ) : files.length === 0 ? (
-                                    <div className="drive-loading-box">No files found matching criteria.</div>
+                                    <div className="drive-picker-empty-files">
+                                        <FolderOpen size={24} className="text-white/40" />
+                                        <span>No files found matching criteria.</span>
+                                    </div>
                                 ) : (
                                     files.map((file) => {
                                         const isSelected = Boolean(selectedMap[file.id]);
@@ -171,24 +210,27 @@ export default function GoogleDrivePickerModal({
                                             <div
                                                 key={file.id}
                                                 onClick={() => toggleSelect(file)}
-                                                className={`drive-file-item ${isSelected ? "selected" : ""}`}
+                                                className={`drive-picker-file-item ${isSelected ? "selected" : ""}`}
                                             >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isSelected}
-                                                    onChange={() => { }} // Managed by item onClick
-                                                    className="drive-checkbox"
-                                                />
+                                                <div
+                                                    className={`drive-picker-checkbox ${isSelected ? "checked" : ""}`}
+                                                >
+                                                    {isSelected && <Check size={12} strokeWidth={3} />}
+                                                </div>
                                                 {file.iconLink ? (
-                                                    <img src={file.iconLink} alt="" className="drive-file-icon" />
+                                                    <img
+                                                        src={file.iconLink}
+                                                        alt=""
+                                                        className="drive-picker-file-icon"
+                                                    />
                                                 ) : (
-                                                    <span className="drive-file-icon-placeholder">📄</span>
+                                                    <FileText size={16} className="text-[#ff3b19]" />
                                                 )}
-                                                <div className="drive-file-info">
-                                                    <span className="drive-file-name" title={file.name}>
+                                                <div className="drive-picker-file-info">
+                                                    <span className="drive-picker-file-name" title={file.name}>
                                                         {file.name}
                                                     </span>
-                                                    <span className="drive-file-meta">
+                                                    <span className="drive-picker-file-meta">
                                                         {formatFileSize(file.size)} •{" "}
                                                         {file.modifiedTime
                                                             ? new Date(file.modifiedTime).toLocaleDateString()
@@ -206,18 +248,25 @@ export default function GoogleDrivePickerModal({
 
                 {/* Modal Footer */}
                 {!notConnected && (
-                    <div className="drive-modal-footer">
-                        <span className="drive-selected-count">
-                            {Object.keys(selectedMap).length} file(s) selected
+                    <div className="drive-picker-footer">
+                        <span className="drive-picker-selected-count">
+                            <span style={{ color: "#ff3b19", fontWeight: 600 }}>
+                                {Object.keys(selectedMap).length}
+                            </span>{" "}
+                            asset(s) selected
                         </span>
-                        <div className="drive-footer-actions">
-                            <button type="button" onClick={onClose} className="drive-cancel-btn">
+                        <div className="drive-picker-footer-actions">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="drive-picker-cancel-btn"
+                            >
                                 Cancel
                             </button>
                             <button
                                 type="button"
                                 onClick={handleConfirm}
-                                className="drive-confirm-btn"
+                                className="drive-picker-confirm-btn"
                                 disabled={loading}
                             >
                                 Confirm Selection
@@ -226,251 +275,6 @@ export default function GoogleDrivePickerModal({
                     </div>
                 )}
             </div>
-
-            <style jsx>{`
-        .drive-modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.75);
-          backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
-          padding: 20px;
-        }
-        .drive-modal-card {
-          width: 100%;
-          max-width: 620px;
-          background: #0d111a;
-          border: 1px solid #1e293b;
-          border-radius: 10px;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          max-height: 85vh;
-        }
-        .drive-modal-header {
-          padding: 16px 20px;
-          border-bottom: 1px solid #1e293b;
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          background: #111622;
-        }
-        .drive-modal-title {
-          margin: 0;
-          font-size: 16px;
-          color: #f1f5f9;
-          font-weight: 600;
-          letter-spacing: -0.01em;
-        }
-        .drive-modal-subtitle {
-          margin: 4px 0 0 0;
-          font-size: 12px;
-          color: #64748b;
-        }
-        .drive-modal-close-btn {
-          background: transparent;
-          border: none;
-          color: #64748b;
-          font-size: 16px;
-          cursor: pointer;
-          padding: 4px;
-        }
-        .drive-modal-close-btn:hover {
-          color: #f1f5f9;
-        }
-        .drive-modal-body {
-          padding: 16px 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          overflow-y: auto;
-        }
-        .drive-search-bar {
-          display: flex;
-          gap: 8px;
-        }
-        .drive-search-input {
-          flex: 1;
-          background: #161b26;
-          border: 1px solid #1e293b;
-          border-radius: 6px;
-          padding: 8px 12px;
-          color: #f1f5f9;
-          font-size: 13px;
-          outline: none;
-        }
-        .drive-search-input:focus {
-          border-color: #38bdf8;
-        }
-        .drive-search-btn {
-          background: #1e293b;
-          border: 1px solid #334155;
-          color: #e2e8f0;
-          padding: 8px 16px;
-          border-radius: 6px;
-          font-size: 12px;
-          cursor: pointer;
-        }
-        .drive-search-btn:hover {
-          background: #334155;
-        }
-        .drive-file-list {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          max-height: 340px;
-          overflow-y: auto;
-          border: 1px solid #1e293b;
-          border-radius: 6px;
-          background: #090c13;
-          padding: 4px;
-        }
-        .drive-file-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 8px 10px;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: background 0.15s ease;
-        }
-        .drive-file-item:hover {
-          background: #161b26;
-        }
-        .drive-file-item.selected {
-          background: rgba(56, 189, 248, 0.08);
-          border: 1px solid rgba(56, 189, 248, 0.25);
-        }
-        .drive-checkbox {
-          cursor: pointer;
-          accent-color: #38bdf8;
-        }
-        .drive-file-icon {
-          width: 16px;
-          height: 16px;
-        }
-        .drive-file-icon-placeholder {
-          font-size: 14px;
-        }
-        .drive-file-info {
-          display: flex;
-          flex-direction: column;
-          min-width: 0;
-        }
-        .drive-file-name {
-          font-size: 13px;
-          color: #f1f5f9;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .drive-file-meta {
-          font-size: 11px;
-          color: #64748b;
-        }
-        .drive-empty-state {
-          padding: 40px 20px;
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        .drive-empty-state h4 {
-          margin: 12px 0 6px 0;
-          color: #f1f5f9;
-          font-size: 16px;
-        }
-        .drive-empty-state p {
-          margin: 0 0 20px 0;
-          font-size: 13px;
-          color: #94a3b8;
-          max-width: 360px;
-        }
-        .drive-connect-btn {
-          display: inline-block;
-          background: #2563eb;
-          color: #ffffff;
-          padding: 10px 20px;
-          border-radius: 6px;
-          font-size: 13px;
-          font-weight: 500;
-          text-decoration: none;
-          transition: background 0.15s;
-        }
-        .drive-connect-btn:hover {
-          background: #1d4ed8;
-        }
-        .drive-status-badge {
-          font-family: monospace;
-          font-size: 10px;
-          padding: 3px 8px;
-          border-radius: 4px;
-          letter-spacing: 0.05em;
-        }
-        .drive-status-badge.warn {
-          background: rgba(245, 158, 11, 0.1);
-          color: #fbbf24;
-          border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-        .drive-modal-footer {
-          padding: 14px 20px;
-          border-top: 1px solid #1e293b;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: #111622;
-        }
-        .drive-selected-count {
-          font-size: 12px;
-          color: #64748b;
-          font-family: monospace;
-        }
-        .drive-footer-actions {
-          display: flex;
-          gap: 10px;
-        }
-        .drive-cancel-btn {
-          background: transparent;
-          border: 1px solid #334155;
-          color: #94a3b8;
-          padding: 6px 14px;
-          border-radius: 6px;
-          font-size: 12px;
-          cursor: pointer;
-        }
-        .drive-confirm-btn {
-          background: #38bdf8;
-          border: none;
-          color: #08090c;
-          font-weight: 600;
-          padding: 6px 16px;
-          border-radius: 6px;
-          font-size: 12px;
-          cursor: pointer;
-        }
-        .drive-confirm-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .drive-loading-box {
-          padding: 30px;
-          text-align: center;
-          color: #64748b;
-          font-size: 13px;
-        }
-        .drive-error-banner {
-          background: rgba(244, 63, 94, 0.1);
-          border: 1px solid rgba(244, 63, 94, 0.3);
-          color: #fb7185;
-          padding: 8px 12px;
-          border-radius: 6px;
-          font-size: 12px;
-        }
-      `}</style>
         </div>
     );
 }

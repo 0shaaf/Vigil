@@ -7,11 +7,15 @@ export async function GET() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
+    error: authErr,
   } = await supabase.auth.getUser();
 
   const appUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-  if (!user) {
+  if (authErr || !user) {
+    console.error("[SERVER ERROR] [GET /api/auth/google] Unauthorized request to initiate Google OAuth:", {
+      authError: authErr?.message,
+    });
     return NextResponse.redirect(new URL("/login?error=unauthorized", appUrl));
   }
 
@@ -19,6 +23,10 @@ export async function GET() {
   const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
   if (!clientId || !redirectUri) {
+    console.error("[SERVER ERROR] [GET /api/auth/google] Missing required Google OAuth environment credentials:", {
+      hasClientId: Boolean(clientId),
+      hasRedirectUri: Boolean(redirectUri),
+    });
     return NextResponse.json(
       { error: "Google OAuth credentials missing from environment variables." },
       { status: 500 }

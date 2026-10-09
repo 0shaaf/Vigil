@@ -19,71 +19,81 @@ export default function LoginForm({ onToggleMode }) {
     setErrorMessage("");
     setLoading(true);
 
-    const { error } = await signInWithEmail(email, password);
-
-    if (error) {
-      setErrorMessage(error.message);
+    try {
+      const { error } = await signInWithEmail(email, password);
+      if (error) {
+        setErrorMessage(error.message);
+        setLoading(false);
+      } else {
+        router.push("/dashboard");
+        router.refresh();
+      }
+    } catch (err) {
+      setErrorMessage("Authentication gateway unreachable.");
       setLoading(false);
-    } else {
-      router.push("/dashboard");
-      router.refresh();
     }
   };
 
   // 2. Google OAuth Login
   const handleGoogleLogin = async () => {
     setErrorMessage("");
-    const { error } = await signInWithGoogle();
-    if (error) {
-      setErrorMessage(error.message);
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        setErrorMessage(error.message);
+      }
+    } catch (err) {
+      setErrorMessage("OAuth provider error.");
     }
   };
 
   return (
     <div className="form-container">
-      <p className="form-title">Welcome back</p>
+      <p className="title">Welcome back</p>
 
       {errorMessage && <div className="auth-error">{errorMessage}</div>}
 
-      <form className="auth-form" onSubmit={handleEmailLogin}>
+      <form className="form" onSubmit={handleEmailLogin}>
         <input
           type="email"
-          className="auth-input"
+          className="input"
           placeholder="Email"
           required
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <input
           type="password"
-          className="auth-input"
+          className="input"
           placeholder="Password"
           required
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-
         <p className="page-link">
-          <Link href="/forgot-password" className="login-forgot-link">
+          <Link href="/forgot-password" className="page-link-label">
             Forgot Password?
           </Link>
         </p>
-
-        <button type="submit" className="form-btn" disabled={loading}>
+        <button className="form-btn" type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Log in"}
         </button>
       </form>
 
       <p className="sign-up-label">
         Don&apos;t have an account?
-        <span className="sign-up-link" onClick={onToggleMode}>
-          Sign up
-        </span>
+        {onToggleMode ? (
+          <span className="sign-up-link" onClick={onToggleMode}>
+            Sign up
+          </span>
+        ) : (
+          <Link href="/signup" className="sign-up-link">
+            Sign up
+          </Link>
+        )}
       </p>
-
-      <div className="auth-divider">
-        <span>or</span>
-      </div>
 
       <div className="buttons-container">
         <button
@@ -95,6 +105,9 @@ export default function LoginForm({ onToggleMode }) {
             stroke="currentColor"
             fill="currentColor"
             strokeWidth={0}
+            version="1.1"
+            x="0px"
+            y="0px"
             className="google-icon"
             viewBox="0 0 48 48"
             height="1em"

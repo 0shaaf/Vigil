@@ -9,7 +9,11 @@ async function handleIncomingWebhook(req) {
   let body = null;
   try {
     body = await req.json();
-  } catch {
+  } catch (parseErr) {
+    console.error(`[SERVER ERROR] [handleIncomingWebhook] Failed parsing incoming webhook JSON payload (${method}):`, {
+      method,
+      error: parseErr.message,
+    });
     body = null;
   }
 
