@@ -5,19 +5,21 @@ import "../../css/switch-form.css";
 
 export default async function CreateSwitchPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/");
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    redirect("/login");
+  }
 
   // Fetch the user's base pool of contacts
   const { data: contacts } = await supabase
     .from("contacts")
     .select("id, contact_name, email")
-    .eq("usr_id", user.id)
+    .eq("usr_id", user?.id || "")
     .order("contact_name", { ascending: true });
 
   return (
-    <div className="switch-create-page-wrapper">
-      <div className="switch-view-container">
+    <div className="switch-create-page-wrapper min-h-full w-full">
+      <div className="switch-view-container w-full max-w-[960px] mx-auto flex justify-center">
         <CreateSwitchForm availableContacts={contacts || []} />
       </div>
     </div>

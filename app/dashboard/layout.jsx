@@ -1,6 +1,12 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "../lib/supabase/server-client";
 import Sidebar from "./components/Sidebar";
+import "./css/Sidebar.css";
+import "./css/dashboard.css";
+import "./css/switch-form.css";
+import "./css/switches.css";
+import "./css/switch-card.css";
+import "./css/drive-picker-modal.css";
 
 export default async function DashboardLayout({ children }) {
   const supabase = await createSupabaseServerClient();

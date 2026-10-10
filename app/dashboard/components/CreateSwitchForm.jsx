@@ -488,6 +488,10 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
       if (initialSwitch?.id) {
         const res = await updateSwitch(initialSwitch.id, payload);
         if (res?.error) {
+          if (res.error === "Unauthorized" || res.error.toLowerCase().includes("log in")) {
+            window.location.href = "/login";
+            return;
+          }
           setServerError(res.error);
           setSubmitting(false);
         } else {
@@ -497,6 +501,10 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
       } else {
         const res = await createSwitch(payload);
         if (res?.error) {
+          if (res.error === "Unauthorized" || res.error.toLowerCase().includes("log in")) {
+            window.location.href = "/login";
+            return;
+          }
           setServerError(res.error);
           setSubmitting(false);
         } else if (res?.id) {
@@ -506,6 +514,10 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
       }
     } catch (err) {
       console.error("[CreateSwitchForm] Submit Error:", err);
+      if (err?.message?.toLowerCase().includes("unauthorized") || err?.message?.toLowerCase().includes("log in")) {
+        window.location.href = "/login";
+        return;
+      }
       setServerError(err.message || "Failed to save switch configuration. Please try again.");
       setSubmitting(false);
     }
@@ -518,6 +530,10 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
     try {
       const res = await removeSwitch(initialSwitch.id);
       if (res?.error) {
+        if (res.error === "Unauthorized" || res.error.toLowerCase().includes("log in")) {
+          window.location.href = "/login";
+          return;
+        }
         setDeleteError(res.error);
         setDeleting(false);
       } else {
@@ -525,6 +541,10 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
         router.refresh();
       }
     } catch (err) {
+      if (err?.message?.toLowerCase().includes("unauthorized") || err?.message?.toLowerCase().includes("log in")) {
+        window.location.href = "/login";
+        return;
+      }
       setDeleteError(err?.message || "Failed to delete switch");
       setDeleting(false);
     }
@@ -544,10 +564,10 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
   });
 
   return (
-    <div className="switch-wizard-container">
+    <div className="switch-wizard-container w-full max-w-[740px]">
       {/* Header Bar with Plain Text Switch Name & Pencil Edit Icon */}
-      <div className="wizard-header-bar">
-        <div className="wizard-inline-name-group">
+      <div className="wizard-header-bar flex items-center justify-between">
+        <div className="wizard-inline-name-group inline-flex items-center gap-2.5 flex-1 min-w-0">
           <input
             {...restNameRegister}
             ref={(e) => {
@@ -555,7 +575,7 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
               nameInputRef.current = e;
             }}
             type="text"
-            className="wizard-plain-name-input"
+            className="wizard-plain-name-input flex-1 min-w-0"
             readOnly={!isEditingName}
             onBlur={() => setIsEditingName(false)}
             onKeyDown={(e) => {
@@ -568,7 +588,7 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
           />
           <button
             type="button"
-            className="btn-edit-pencil"
+            className="btn-edit-pencil flex-shrink-0"
             onClick={handleStartNameEdit}
             title="Edit switch name"
           >
@@ -583,7 +603,7 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
               setDeleteError("");
               setShowDeleteModal(true);
             }}
-            className="btn-wizard-header-delete"
+            className="btn-wizard-header-delete flex-shrink-0"
             title="Delete this switch"
           >
             <Trash2 size={14} />
@@ -594,13 +614,13 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
 
       {/* Progress Indicator */}
       <div className="wizard-progress-section">
-        <div className="wizard-progress-header">
+        <div className="wizard-progress-header flex justify-between items-center flex-wrap gap-3">
           <span className="wizard-step-badge">
             {initialSwitch
               ? `Editing Switch #${initialSwitch.id} — Step ${currentStep} of ${TOTAL_STEPS}`
               : `Step ${currentStep} of ${TOTAL_STEPS}`}
           </span>
-          <div className="wizard-step-pills">
+          <div className="wizard-step-pills flex items-center gap-1.5">
             {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((stepNum) => (
               <button
                 key={stepNum}
@@ -646,20 +666,20 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
                   </h2>
                 </div>
 
-                <div className="radio-inputs-grid">
+                <div className="radio-inputs-grid grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {PURPOSE_OPTIONS.map((opt) => {
                     const IconComp = opt.icon;
                     const isChecked = selectedPurpose === opt.id;
                     return (
-                      <label key={opt.id} className="radio-card-wrapper">
+                      <label key={opt.id} className="radio-card-wrapper relative cursor-pointer">
                         <input
                           type="radio"
                           value={opt.id}
                           checked={isChecked}
                           {...register("purpose")}
-                          className="radio-hidden-input"
+                          className="radio-hidden-input sr-only"
                         />
-                        <span className={`radio-tile ${isChecked ? "active" : ""}`}>
+                        <span className={`radio-tile flex flex-col items-center justify-center text-center ${isChecked ? "active" : ""}`}>
                           <span className="radio-icon">
                             <IconComp size={24} />
                           </span>
@@ -685,20 +705,20 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
                   <h2 className="wizard-step-title">How important is this switch?</h2>
                 </div>
 
-                <div className="radio-inputs-grid">
+                <div className="radio-inputs-grid grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {CRITICALITY_OPTIONS.map((opt) => {
                     const IconComp = opt.icon;
                     const isChecked = selectedCriticality === opt.id;
                     return (
-                      <label key={opt.id} className="radio-card-wrapper">
+                      <label key={opt.id} className="radio-card-wrapper relative cursor-pointer">
                         <input
                           type="radio"
                           value={opt.id}
                           checked={isChecked}
                           {...register("criticality")}
-                          className="radio-hidden-input"
+                          className="radio-hidden-input sr-only"
                         />
-                        <span className={`radio-tile ${isChecked ? "active" : ""}`}>
+                        <span className={`radio-tile flex flex-col items-center justify-center text-center ${isChecked ? "active" : ""}`}>
                           <span className="radio-icon">
                             <IconComp size={24} />
                           </span>
@@ -1267,7 +1287,7 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
       </div>
 
       {/* Wizard Footer Controls */}
-      <div className="wizard-footer-controls">
+      <div className="wizard-footer-controls flex items-center justify-between">
         <button
           type="button"
           onClick={handlePrev}
@@ -1278,7 +1298,7 @@ export default function CreateSwitchForm({ initialSwitch = null, availableContac
           <span>Previous</span>
         </button>
 
-        <div className="wizard-footer-right">
+        <div className="wizard-footer-right flex items-center gap-3">
           <Link
             href={initialSwitch ? `/dashboard/switches/${initialSwitch.id}` : "/dashboard/switches"}
             className="btn-wizard-cancel"

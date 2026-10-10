@@ -55,16 +55,27 @@ export default function SwitchCard({ switchData }) {
     setPulseLoading(true);
 
     try {
-      if (switchData.status === "EXHAUSTED" || switchData.status === "ACKNOWLEDGED") {
-        await rearmSwitch(switchData.id);
-      } else {
-        await checkInSingleSwitch(switchData.id);
+      const res =
+        switchData.status === "EXHAUSTED" || switchData.status === "ACKNOWLEDGED"
+          ? await rearmSwitch(switchData.id)
+          : await checkInSingleSwitch(switchData.id);
+
+      if (res?.error) {
+        if (res.error === "Unauthorized" || res.error.toLowerCase().includes("log in")) {
+          window.location.href = "/login";
+          return;
+        }
       }
+
       setPulseSuccess(true);
       setTimeout(() => setPulseSuccess(false), 2500);
       router.refresh();
     } catch (err) {
       console.error("[SwitchCard Pulse Error]:", err);
+      if (err?.message?.toLowerCase().includes("unauthorized") || err?.message?.toLowerCase().includes("log in")) {
+        window.location.href = "/login";
+        return;
+      }
     } finally {
       setPulseLoading(false);
     }
@@ -79,6 +90,10 @@ export default function SwitchCard({ switchData }) {
     try {
       const res = await removeSwitch(switchData.id);
       if (res?.error) {
+        if (res.error === "Unauthorized" || res.error.toLowerCase().includes("log in")) {
+          window.location.href = "/login";
+          return;
+        }
         setDeleteError(res.error);
         setDeleting(false);
       } else {
@@ -86,6 +101,10 @@ export default function SwitchCard({ switchData }) {
         router.refresh();
       }
     } catch (err) {
+      if (err?.message?.toLowerCase().includes("unauthorized") || err?.message?.toLowerCase().includes("log in")) {
+        window.location.href = "/login";
+        return;
+      }
       setDeleteError(err?.message || "Failed to delete switch");
       setDeleting(false);
     }

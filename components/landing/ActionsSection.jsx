@@ -63,6 +63,18 @@ export default function ActionsSection() {
     setIsAnimationComplete(false);
 
     if (!gridRef.current || cardRefs.current.length < 4) return;
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
+    if (isMobile) {
+      cardRefs.current.forEach((card) => {
+        if (!card) return;
+        card.style.transform = "translate3d(0, 16px, 0)";
+        card.style.opacity = "0";
+        card.style.zIndex = "";
+      });
+      return;
+    }
+
     const card0 = cardRefs.current[0];
     if (!card0) return;
 
@@ -83,16 +95,55 @@ export default function ActionsSection() {
   // Play continuous, unified hardware-accelerated animation without any jump or jerk
   const playContinuousCardAnimation = () => {
     if (!gridRef.current || cardRefs.current.length < 4) return;
-    const card0 = cardRefs.current[0];
-    if (!card0) return;
-
     stopAllAnimations();
     setIsAnimationComplete(false);
+
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
+    if (isMobile) {
+      // Mobile: Swift vertical stagger in natural slot without cross-screen displacement or freezing
+      cardRefs.current.forEach((card, idx) => {
+        if (!card) return;
+        card.style.zIndex = "1";
+        const anim = card.animate(
+          [
+            { transform: "translate3d(0, 18px, 0)", opacity: 0 },
+            { transform: "translate3d(0, 0, 0)", opacity: 1 },
+          ],
+          {
+            duration: 350,
+            delay: idx * 60,
+            easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+            fill: "forwards",
+          }
+        );
+
+        activeAnimationsRef.current.push(anim);
+
+        if (idx === cardRefs.current.length - 1) {
+          anim.onfinish = () => {
+            cardRefs.current.forEach((c) => {
+              if (c) {
+                c.style.transform = "";
+                c.style.opacity = "";
+                c.style.zIndex = "";
+              }
+            });
+            setIsAnimationComplete(true);
+          };
+        }
+      });
+      return;
+    }
+
+    // Desktop: Continuous horizontal dispersal with reduced start offset
+    const card0 = cardRefs.current[0];
+    if (!card0) return;
 
     const card0Left = card0.offsetLeft;
     const card0Top = card0.offsetTop;
     const offscreenShift = -(window.innerWidth + 400);
-    const duration = 2000; // Continuous total duration
+    const duration = 1100; // Snappy continuous total duration
 
     cardRefs.current.forEach((card, idx) => {
       if (!card) return;
@@ -105,7 +156,6 @@ export default function ActionsSection() {
       let keyframes = [];
 
       if (idx === 0) {
-        // Card 0: Slides in together with stack, settles in slot 0, remains anchored
         keyframes = [
           {
             transform: `translate3d(${offscreenShift}px, 0px, 0px)`,
@@ -116,7 +166,7 @@ export default function ActionsSection() {
           {
             transform: "translate3d(0px, 0px, 0px)",
             opacity: 1,
-            offset: 0.44,
+            offset: 0.25,
           },
           {
             transform: "translate3d(0px, 0px, 0px)",
@@ -125,10 +175,8 @@ export default function ActionsSection() {
           },
         ];
       } else {
-        // Cards 1-3: Aligned perfectly beneath Card 0 as one single card,
-        // then smoothly peel off and disperse with staggered continuous timing
-        const disperseStart = 0.46 + idx * 0.05; // 0.51, 0.56, 0.61
-        const disperseEnd = Math.min(0.80 + idx * 0.06, 1.0); // 0.86, 0.92, 0.98
+        const disperseStart = 0.26 + idx * 0.04;
+        const disperseEnd = Math.min(0.72 + idx * 0.06, 1.0);
 
         keyframes = [
           {
@@ -141,7 +189,7 @@ export default function ActionsSection() {
             transform: `translate3d(${dx}px, ${dy}px, 0px)`,
             opacity: 1,
             easing: "ease-in-out",
-            offset: 0.44,
+            offset: 0.25,
           },
           {
             transform: `translate3d(${dx}px, ${dy}px, 0px)`,
@@ -171,7 +219,6 @@ export default function ActionsSection() {
 
       if (idx === 3) {
         anim.onfinish = () => {
-          // Clear styles so normal hover and interactions work with zero interference
           cardRefs.current.forEach((c) => {
             if (c) {
               c.style.transform = "";
@@ -210,8 +257,8 @@ export default function ActionsSection() {
         }
       },
       {
-        threshold: 0.15,
-        rootMargin: "-20px 0px -20px 0px",
+        threshold: 0.05,
+        rootMargin: "40px 0px 40px 0px",
       }
     );
 

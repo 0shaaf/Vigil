@@ -5,8 +5,6 @@
    Design: Clean Solid White & Bloodish Orange Inner Cards
    ========================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@500;700&display=swap');
-
 /* Switch Create Page Wrapper */
 .switch-create-page-wrapper {
   position: relative;
@@ -71,6 +69,18 @@
   box-shadow: 0 16px 45px -10px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   position: relative;
   font-family: 'Noto Sans', system-ui, -apple-system, sans-serif;
+  animation: wizardEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes wizardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 640px) {

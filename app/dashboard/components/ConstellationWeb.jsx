@@ -620,13 +620,21 @@ export default function ConstellationWeb({ switches = [] }) {
 
     try {
       const res = await triggerHeartbeat();
+      if (res?.error && (res.error === "Unauthorized" || res.error.toLowerCase().includes("log in"))) {
+        window.location.href = "/login";
+        return;
+      }
       if (res?.success) {
         showToast("Heartbeat confirmed — All switches renewed", "success");
         router.refresh();
       } else {
         showToast(res?.error || "Pulse transmission rejected", "error");
       }
-    } catch (_) {
+    } catch (err) {
+      if (err?.message?.toLowerCase().includes("unauthorized") || err?.message?.toLowerCase().includes("log in")) {
+        window.location.href = "/login";
+        return;
+      }
       showToast("GATEWAY TIMEOUT", "error");
     }
 

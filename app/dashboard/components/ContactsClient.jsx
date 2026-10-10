@@ -87,6 +87,10 @@ export default function ContactsClient({ initialContacts = [] }) {
     });
 
     if (res?.error) {
+      if (res.error === "Unauthorized" || res.error.toLowerCase().includes("log in")) {
+        window.location.href = "/login";
+        return;
+      }
       setErrorMsg(res.error);
     } else if (res?.contact) {
       // Prepend newly created contact to state
@@ -108,6 +112,10 @@ export default function ContactsClient({ initialContacts = [] }) {
 
     const res = await deleteContact(id);
     if (res?.error) {
+      if (res.error === "Unauthorized" || res.error.toLowerCase().includes("log in")) {
+        window.location.href = "/login";
+        return;
+      }
       setErrorMsg(res.error);
     } else {
       setContacts((prev) => prev.filter((c) => c.id !== id));

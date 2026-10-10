@@ -36,8 +36,8 @@ export default async function EditSwitchPage({ params }) {
     .order("contact_name", { ascending: true });
 
   return (
-    <div className="switch-create-page-wrapper">
-      <div className="switch-view-container">
+    <div className="switch-create-page-wrapper min-h-full w-full">
+      <div className="switch-view-container w-full max-w-[960px] mx-auto flex justify-center">
         <CreateSwitchForm
           initialSwitch={switchData}
           availableContacts={contacts || []}

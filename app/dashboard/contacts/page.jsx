@@ -9,7 +9,9 @@ export default async function ContactsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/");
+  if (!user) {
+    redirect("/login");
+  }
 
   const { data: contacts } = await getContacts();
 
